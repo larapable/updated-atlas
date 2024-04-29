@@ -12,6 +12,7 @@
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
     "@mui/material": "^5.15.15",
+    "@types/mysql": "^2.15.26",
     "autoprefixer": "^10.4.19",
     "bcryptjs": "^2.4.3",
     "my-sql": "^1.2.15",

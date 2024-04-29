@@ -52,8 +52,8 @@
 .prev-button {
   border-radius: 0.625rem;
   position: absolute;
-  top: 385%;
-  margin-left: 45%;
+  top: 403%;
+  margin-left: 48%;
   transform: translateY(-50%);
   background-color: #ffffff;
   color: rgba(0, 0, 0, 0.5);
@@ -74,8 +74,8 @@
 .next-button {
   border-radius: 0.625rem;
   position: absolute;
-  top: 385%;
-  margin-left: 49%;
+  top: 403%;
+  margin-left: 52%;
   transform: translateY(-50%);
   background-color: #ffffff;
   color: rgba(0, 0, 0, 0.5);

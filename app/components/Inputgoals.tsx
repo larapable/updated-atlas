@@ -18,14 +18,14 @@ export default function Inputgoals() {
 
   const handleSave = async (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     event.preventDefault()
-    
+
 
     if (!officeVision || !valueProposition || !strategicGoals) {
       alert('Please fill out all fields')
       return;
     }
 
-    try{
+    try {
       const response = await fetch('api/inputGoals', {
         method: 'POST',
         headers: {
@@ -52,7 +52,7 @@ export default function Inputgoals() {
       console.error('Error:', error)
     }
   }
-  
+
   return (
     <div className="bg-[#E9E9E9] flex flex-col items-center w-[90rem] box-sizing-border">
       <div className="bg-[#FFFFFF] relative m-[0_0_2.3rem_0] flex flex-row justify-between self-end p-[1.1rem_0_1.1rem_3.9rem] left-[11.5rem] top-[-2.5rem] w-[104rem] box-sizing-border">
@@ -118,7 +118,7 @@ export default function Inputgoals() {
       <div className="m-[0_12.7rem_0.6rem_0] ml-[-22rem] inline-block break-words font-normal text-[1rem] text-[#807C7C]">
         A guiding principles for decision-making, driving the organization towards its desired future state.
       </div>
-      <input type="text" 
+      <input type="text"
         onChange={(e) => setStrategicGoals(e.target.value)}
         disabled={!isEditing}
         className={`mx-auto rounded-[0.6rem] ml-[5rem] border-[0.1rem_solid_#807C7C] 
@@ -126,7 +126,7 @@ export default function Inputgoals() {
         ${!isEditing ? 'bg-gray-300' : ''}`}>
       </input>
 
-      <input type="text" 
+      <input type="text"
         onChange={(e) => setStrategicGoals2(e.target.value)}
         disabled={!isEditing}
         className={`mx-auto rounded-[0.6rem] ml-[5rem] border-[0.1rem_solid_#807C7C] 
@@ -134,7 +134,7 @@ export default function Inputgoals() {
         ${!isEditing ? 'bg-gray-300' : ''}`}>
       </input>
 
-      <input type="text" 
+      <input type="text"
         onChange={(e) => setStrategicGoals3(e.target.value)}
         disabled={!isEditing}
         className={`mx-auto rounded-[0.6rem] ml-[5rem] border-[0.1rem_solid_#807C7C] 
@@ -151,39 +151,39 @@ export default function Inputgoals() {
         </span>
       </div>
       <div className="m-[0_0_4.6rem_3.6rem] flex flex-row justify-between w-[61.3rem] box-sizing-border">
-      <div className="rounded-[0.6rem] ml-[-12rem] border-[0.1rem_solid_#807C7C] bg-[#FFFFFF] relative p-[0.9rem_1.1rem_0.8rem_1.1rem] w-[28.8rem] box-sizing-border">
-        <DatePicker
-          selected={selectedDate}
-          onChange={(date: Date | null) => setSelectedDate(date)}
-          dateFormat="yyyy/MM/dd"
-          placeholderText="YYYY/MM/DD"
-          className="break-words font-normal text-[0.9rem] text-[#807C7C] cursor-pointer"
-        />
-      </div>
-      <div className="rounded-[0.6rem] ml-[-12rem] border-[0.1rem_solid_#807C7C] bg-[#FFFFFF] relative p-[0.9rem_1.1rem_0.8rem_1.1rem] w-[28.8rem] box-sizing-border">
-        <DatePicker
-          selected={selectedEndDate}
-          onChange={(date: Date | null) => setSelectedEndDate(date)}
-          dateFormat="yyyy/MM/dd"
-          placeholderText="YYYY/MM/DD"
-          className="break-words font-normal text-[0.9rem] text-[#807C7C] cursor-pointer"
-        />
-      </div>
+        <div className="rounded-[0.6rem] ml-[-12rem] border-[0.1rem_solid_#807C7C] bg-[#FFFFFF] relative p-[0.9rem_1.1rem_0.8rem_1.1rem] w-[28.8rem] box-sizing-border">
+          <DatePicker
+            selected={selectedDate}
+            onChange={(date: Date | null) => setSelectedDate(date)}
+            dateFormat="yyyy/MM/dd"
+            placeholderText="YYYY/MM/DD"
+            className="break-words font-normal text-[0.9rem] text-[#807C7C] cursor-pointer w-[26.5rem]"
+          />
+        </div>
+        <div className="rounded-[0.6rem] ml-[-12rem] border-[0.1rem_solid_#807C7C] bg-[#FFFFFF] relative p-[0.9rem_1.1rem_0.8rem_1.1rem] w-[28.8rem] box-sizing-border">
+          <DatePicker
+            selected={selectedEndDate}
+            onChange={(date: Date | null) => setSelectedEndDate(date)}
+            dateFormat="yyyy/MM/dd"
+            placeholderText="YYYY/MM/DD"
+            className="break-words font-normal text-[0.9rem] text-[#807C7C] cursor-pointer w-[26.5rem]"
+          />
+        </div>
       </div>
       <div className="m-[0_0_0_10.3rem] ml-[5rem] mb-20 flex flex-row w-[25.8rem] box-sizing-border">
         {isEditing ? (
-            <button onClick={handleSave} className="rounded-[0.6rem] bg-[#FAD655] relative m-[0_2.9rem_0_0] flex flex-row justify-center p-[0.8rem_0.1rem_0.8rem_0] w-[11.4rem] box-sizing-border hover:bg-[#FFFFFF]">
-              <span className="break-words font-normal text-[1.3rem] text-[#962203]">
-                Save
-              </span>
-            </button>
-          ) : (
-            <button onClick={handleEdit} className="rounded-[0.6rem] bg-[#FAD655] relative m-[0_2.9rem_0_0] flex flex-row justify-center p-[0.8rem_0.1rem_0.8rem_0] w-[11.4rem] box-sizing-border hover:bg-[#FFFFFF]">
-              <span className="break-words font-normal text-[1.3rem] text-[#962203]">
-                Edit
-              </span>
-            </button>
-          )}
+          <button onClick={handleSave} className="rounded-[0.6rem] bg-[#FAD655] relative m-[0_2.9rem_0_0] flex flex-row justify-center p-[0.8rem_0.1rem_0.8rem_0] w-[11.4rem] box-sizing-border hover:bg-[#FFFFFF]">
+            <span className="break-words font-normal text-[1.3rem] text-[#962203]">
+              Save
+            </span>
+          </button>
+        ) : (
+          <button onClick={handleEdit} className="rounded-[0.6rem] bg-[#FAD655] relative m-[0_2.9rem_0_0] flex flex-row justify-center p-[0.8rem_0.1rem_0.8rem_0] w-[11.4rem] box-sizing-border hover:bg-[#FFFFFF]">
+            <span className="break-words font-normal text-[1.3rem] text-[#962203]">
+              Edit
+            </span>
+          </button>
+        )}
 
         <button className="rounded-[0.6rem] border-[0.1rem_solid_#FAD655] bg-[#FFFFFF] relative flex flex-row justify-center p-[0.8rem_0.5rem_0.8rem_0] w-[11.4rem] box-sizing-border hover:bg-[#FAD655]">
           <span className="break-words font-normal text-[1.3rem] text-[#962203]">
@@ -191,11 +191,11 @@ export default function Inputgoals() {
           </span>
         </button>
       </div>
-      <div className="bg-[url('/BlueGreyIllustrationBusinessGoalsFacebookPost71.png')] bg-[50%_50%] bg-cover bg-no-repeat absolute left-[24rem] top-[31rem] w-[7rem] h-[5.3rem]">
+      <div className="bg-[url('/BlueGreyIllustrationBusinessGoalsFacebookPost71.png')] bg-[50%_50%] bg-cover bg-no-repeat absolute left-[22.5rem] top-[31rem] w-[7rem] h-[5.3rem]">
       </div>
-      <div className="bg-[url('/BlueGreyIllustrationBusinessGoalsFacebookPost81.png')] bg-[50%_50%] bg-cover bg-no-repeat absolute left-[26.5rem] top-[18rem] w-[2.9rem] h-[3.6rem]">
+      <div className="bg-[url('/BlueGreyIllustrationBusinessGoalsFacebookPost81.png')] bg-[50%_50%] bg-cover bg-no-repeat absolute left-[24.5rem] top-[18rem] w-[2.9rem] h-[3.6rem]">
       </div>
-      <div className="bg-[url('/BlueGreyIllustrationBusinessGoalsFacebookPost91.png')] bg-[50%_50%] bg-cover bg-no-repeat absolute left-[25.5rem] top-[45.6rem] w-[5.3rem] h-[4.6rem]">
+      <div className="bg-[url('/BlueGreyIllustrationBusinessGoalsFacebookPost91.png')] bg-[50%_50%] bg-cover bg-no-repeat absolute left-[24rem] top-[45.6rem] w-[5.3rem] h-[4.6rem]">
       </div>
     </div>
   )

@@ -27,8 +27,22 @@ const Swot = () => {
   const callGeminiAPI = async () => {
     try {
       const systemPrompt =
-        "You are an AI assistant that provides helpful and friendly responses while adhering to the following rules:";
-
+        "You are an AI assistant that provides SWOT insights and must keep your entire response within 1 sentence. No extra words.";
+  
+      const strengthsInput = strengths.items
+        .map(
+          (strength, index) =>
+            `${index + 1}. ${strength.id}: ${strength.value}`
+        )
+        .join("\n");
+  
+      const weaknessesInput = weaknesses.items
+        .map(
+          (weakness, index) =>
+            `${index + 1}. ${weakness.id}: ${weakness.value}`
+        )
+        .join("\n");
+  
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=AIzaSyDYX9gQuAiwDoEx3gtvhJNwnb1cpcTTXDo`,
         {
@@ -41,7 +55,7 @@ const Swot = () => {
               {
                 parts: [
                   {
-                    text: `${systemPrompt} ${strengthInput}`,
+                    text: `${systemPrompt} \n\nStrengths:\n${strengthsInput}\n\nWeaknesses:\n${weaknessesInput}`,
                   },
                 ],
               },
@@ -49,12 +63,27 @@ const Swot = () => {
           }),
         }
       );
-
+  
       const data = await response.json();
       const apiResponse =
         data.candidates?.[0]?.content?.parts?.[0]?.text ||
         "No response received";
+  
+      // Save the API response to the database
+      const databaseResponse = await fetch("/api/swot", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ response: apiResponse }),
+      });
+  
+      if (!databaseResponse.ok) {
+        console.error("Error saving response to database", databaseResponse);
+      }
+  
       setApiResponse(apiResponse);
+      console.log(apiResponse);
     } catch (error) {
       console.error("Error calling Gemini API:", error);
       setApiResponse("An error occurred while calling the API");
@@ -401,6 +430,7 @@ const Swot = () => {
                         S - O Strategies
                       </span>
                       <FaPlus className="text-white w-6 h-6 cursor-pointer relative" />
+                      <p>{apiResponse}</p>
                     </div>
                   </div>
                 </Card>

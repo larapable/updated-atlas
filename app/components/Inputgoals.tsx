@@ -1,6 +1,7 @@
 import React from 'react';
 import DatePicker from "react-datepicker";
 import 'react-datepicker/dist/react-datepicker.css';
+import UserHeader from './UserHeader';
 
 export default function Inputgoals() {
 
@@ -55,18 +56,10 @@ export default function Inputgoals() {
 
   return (
     <div className="bg-[#E9E9E9] flex flex-col items-center w-[90rem] box-sizing-border">
-      <div className="bg-[#FFFFFF] relative m-[0_0_2.3rem_0] flex flex-row justify-between self-end p-[1.1rem_0_1.1rem_3.9rem] left-[11.5rem] top-[-2.5rem] w-[104rem] box-sizing-border">
-        <div className="rounded-[0.6rem] bg-[#F0E8E8] relative flex flex-row p-[0.9rem_0_0.8rem_1.1rem] w-[32rem] box-sizing-border">
-          <img className="m-[0_0.9rem_0_0] w-[1.6rem] h-[1.6rem]" />
-          <div className="m-[0_0_0.1rem_0] flex flex-row justify-center box-sizing-border">
-            <span className="break-words font-medium text-[1.3rem] text-[#B2B0B0]">
-              Type something...
-            </span>
-          </div>
-        </div>
-        <img className="m-[0.6rem_0_1.1rem_0] w-[1.4rem] h-[1.6rem]" />
+      <div className="ml-[6rem] w-[110rem] mt-[-3rem]">
+        <UserHeader />
       </div>
-      <div className="m-[0_43.2rem_0.9rem_0] ml-[-20rem] mt-[-3rem] inline-block break-words font-bold text-[3rem] text-[#000000]">
+      <div className="ml-[-65rem] mt-[1rem] inline-block break-words font-bold text-[3rem] text-[#000000]">
         GOAL SETTING
       </div>
       <div className="bg-[#EFAF21] m-[0_50.7rem_0.8rem_0] w-[6.4rem] h-[0.2rem] ml-[-25rem] ">

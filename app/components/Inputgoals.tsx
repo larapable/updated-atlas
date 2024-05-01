@@ -56,7 +56,7 @@ export default function Inputgoals() {
 
   return (
     <div className="bg-[#E9E9E9] flex flex-col items-center w-[90rem] box-sizing-border">
-      <div className="ml-[6rem] w-[110rem] mt-[-3rem]">
+      <div className="ml-[10rem] w-[105rem] mt-[-2rem]">
         <UserHeader />
       </div>
       <div className="ml-[-65rem] mt-[1rem] inline-block break-words font-bold text-[3rem] text-[#000000]">

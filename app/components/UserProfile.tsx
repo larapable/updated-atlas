@@ -1,7 +1,9 @@
 import { Button, Card } from "@mui/material";
 import { useState, useEffect } from "react";
 import { getSession, useSession } from "next-auth/react";
+import EditProfile from "../profile/edit/page";
 import Email from "next-auth/providers/email";
+import Link from "next/link"
 
 export default function UserProfile() {
 
@@ -17,50 +19,63 @@ export default function UserProfile() {
  
   const [department, setDepartment] = useState("");
   // const [headOfficer, setHeadOfficer] = useState("John Doe");
-  const [departmentLandline, setDepartmentLandline] = useState("+1234567890");
+  const [departmentLandline, setDepartmentLandline] = useState("");
   // const [email, setEmail] = useState("johndoe@gmail.com");
-  const [location, setLocation] = useState("NGE Building - 4th Floor");
-  const [university, setUniversity] = useState(
-    "Cebu Institute of Technology - University"
-  );
+  const [location, setLocation] = useState("");
+  const [university, setUniversity] = useState("");
   const [departmentDescription, setDepartmentDescription] = useState("---Description---");
-  const [officeVision, setOfficeVision] = useState(
-    "LOREM IPSUM LOREM IPSUN LOREM IPSUN LOREM IPSUN LOREM IPSUM LOREM IPSUM LOREM IPSUM LOREM IPSUM LOREM IPSUM LOREM IPSUM LOREM IPSUN LOREM IPSUN "
-  );
-  const [valueProposition, setValueProposition] = useState(
-    "LOREM IPSUM LOREM IPSUN LOREM IPSUN LOREM IPSUN LOREM IPSUM LOREM IPSUM LOREM IPSUM LOREM IPSUM LOREM IPSUM LOREM IPSUM LOREM IPSUN LOREM IPSUN "
-  );
-  const [strategicGoals, setStrategicGoals] = useState(
-    "LOREM IPSUM LOREM IPSUN LOREM IPSUN LOREM IPSUN LOREM IPSUM LOREM IPSUM LOREM IPSUM LOREM IPSUM LOREM IPSUM LOREM IPSUM LOREM IPSUN LOREM IPSUN "
-  );
+  const [officeVision, setOfficeVision] = useState("---Set Office Vision---");
+  const [valueProposition, setValueProposition] = useState("---Set Value Proposition---");
+  const [strategicGoals, setStrategicGoals] = useState("---Set Strategic Goals---");
 
     const department_id= user?.department_id;
     console.log("User Parsed: ", user);
-
-    
-
-
     const headOfficer = user?.username;
     const email = user?.email;
 
     useEffect(() => {
-      const fetchDepartmentDetails = async () => {
+      const fetchUserProfileData = async () => {
         try {
-          const response = await fetch(`/api/department/${department_id}`);
-          if (response.ok) { // Check if the response is successful
-            const departmentData = await response.json(); // Extract JSON data from the response
-            setDepartment(departmentData); // Set the department state with the fetched data
+          const response = await fetch(`../api/profile/${department_id}`);
+          if (response.ok) {
+            const data = await response.json();
+            console.log("Received data:", data); // Add this line to log the received data
+            setDepartment(data.department_name);
+            setDepartmentLandline(data.departmentLandline);
+            setLocation(data.location);
+            setUniversity(data.university);
+            setDepartmentDescription(data.description);
           } else {
-            console.error('Error fetching department details:', response.statusText);
+            console.error('Error fetching user profile data:', response.statusText);
           }
         } catch (error) {
-          console.error('Error fetching department details:', error);
+          console.error('Error fetching user profile data:', error);
         }
       };
-    
-      fetchDepartmentDetails();
+      fetchUserProfileData();
     }, [department_id]);
-    
+
+
+    useEffect(() => {
+      const fetchProfileGoals = async () => {
+        try {
+          const response = await fetch(`../api/checkGoals/${department_id}`);
+          if (response.ok) {
+            const data = await response.json();
+            console.log("Received data:", data); // Add this line to log the received data
+            setOfficeVision(data.vision);
+            setValueProposition(data.proposition);
+            setStrategicGoals(data.goals)
+            
+          } else {
+            console.error('Error fetching user profile data:', response.statusText);
+          }
+        } catch (error) {
+          console.error('Error fetching user profile data:', error);
+        }
+      };
+      fetchProfileGoals();
+    }, [department_id]);
 
 
   return (
@@ -91,7 +106,7 @@ export default function UserProfile() {
         </div>
         <span className="text-lg font-normal">Department</span>
         <div className="text-4xl font-bold text-center">{department}</div>
-        <Card className="flex flex-col w-[21rem] h-80 mt-10 mb-10 bg-[#E9E9E9] rounded-2xl">
+        <div className="flex flex-col w-[21rem] h-80 mt-10 mb-10 bg-[#ffffff] ">
           <div className=" flex flex-row items-center justify-center w-fit mx-8 mt-3">
             <div className="flex items-center">
               <svg
@@ -195,52 +210,71 @@ export default function UserProfile() {
               <span className=" text-lg font-bold mx-2">{university}</span>
             </div>
           </div>
-        </Card>
+        </div>
+        <Button href="/profile/edit" className="shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-[0.6rem] bg-[#FAD655] text-[#8A252C] break-words font-semibold text-lg relative flex pr-3 pl-6 pb-2 w-40 h-[fit-content] mx-10 mb-5 hover:bg-[#8a252c] hover:text-[#ffffff]">
+          Edit
+        </Button>
       </Card>
+      {/* ABOUT DEPARTMENT */}
+      <div className="flex flex-col gap-5">
       <Card className="w-[64rem] h-auto flex flex-col rounded-2xl ml-10 mr-10">
-        <div className="text-5xl font-bold text-center self-start mx-12 mt-12 mb-5">
+        <div className="flex flex-row self-start gap-[30rem]">
+        <div className="text-2xl font-bold text-center self-start mx-10 mt-10 mb-5">
           About Department
         </div>
-        <div className=" text-2xl mx-12 h-32">{departmentDescription}</div>
-        <div className="flex flex-col max-w-[58rem] h-28 mx-12 mt-10 mb-5 bg-[#FAEAEA] rounded-2xl overflow-auto">
-          <span className="text-2xl font-bold mt-2 mx-10">Office Vision</span>
+        <Button href="/profile/edit" className="shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-[0.6rem] bg-[#FAD655] text-[#8A252C] break-words font-semibold text-lg relative flex pt-2 pr-3 pl-6 pb-2 w-40 h-[fit-content] mx-10 mt-8 mb-5 hover:bg-[#8a252c] hover:text-[#ffffff]">
+          Edit
+        </Button>
+        </div>
+        <div className="bg-[#CBC3C3] left-[0rem] top-[2.3rem] right-[0rem] h-[0.1rem]">
+        </div>
+        <div className=" text-xl mx-12 h-32 mt-5">{departmentDescription}</div>
+      </Card>
+      <Card className="w-[64rem] h-auto flex flex-col rounded-2xl ml-10 mr-10">
+          <span className="text-2xl font-bold mx-10 mt-3 mb-3">Office Vision</span>
+          <div className="bg-[#CBC3C3] left-[0rem] top-[2.3rem] right-[0rem] h-[0.1rem]">
+          </div>
           <div className="mx-10">
-            <div className="text-lg font-normal mx-5 mb-2">
-              <div className="whitespace-normal break-words">
+            <div className="text-lg font-normal mx-5 mb-2 flex flex-row">
+              <div className="bg-[url('/ov.png')] bg-[50%_50%] bg-cover bg-no-repeat h-16 w-28 mt-2 mr-5 ml-[-2rem]">
+              </div>
+              <div className="whitespace-normal break-words pt-3">
                 {officeVision}
               </div>
             </div>
           </div>
-        </div>
-        <div className="flex flex-col max-w-[58rem] h-28 mx-12 mb-5 bg-[#FAEAEA] rounded-2xl overflow-auto">
-          <span className="text-2xl font-bold mt-2 mx-10">
+      </Card>
+      <Card className="w-[64rem] h-auto flex flex-col rounded-2xl ml-10 mr-10">
+          <span className="text-2xl font-bold mx-10 mt-3 mb-3">
             Value Proposition
           </span>
+          <div className="bg-[#CBC3C3] left-[0rem] top-[2.3rem] right-[0rem] h-[0.1rem]">
+          </div>
           <div className="mx-10">
-            <div className="text-lg font-normal mx-5 mb-2">
-              <div className="whitespace-normal break-words">
+            <div className="text-lg font-normal mx-5 mb-2 flex flex-row">
+              <div className="bg-[url('/vp.png')] bg-[50%_50%] bg-cover bg-no-repeat h-16 w-28 mt-2 mr-5 ml-[-2rem]">
+              </div>
+              <div className="whitespace-normal break-words pt-3">
                 {valueProposition}
               </div>
             </div>
           </div>
-        </div>
-        <div className="flex flex-col max-w-[58rem] h-28 mx-12 mb-5 bg-[#FAEAEA] rounded-2xl overflow-auto">
-          <span className="text-2xl font-bold mt-2 mx-10">Strategic Goals</span>
+      </Card>
+      <Card className="w-[64rem] h-auto flex flex-col rounded-2xl ml-10 mr-10">
+          <span className="text-2xl font-bold mx-10 mt-3 mb-3">Strategic Goals</span>
+          <div className="bg-[#CBC3C3] left-[0rem] top-[2.3rem] right-[0rem] h-[0.1rem]">
+          </div>
           <div className="mx-10">
-            <div className="text-lg font-normal mx-5 mb-2">
-              <div className="whitespace-normal break-words">
+            <div className="text-lg font-normal mx-5 mb-2 flex flex-row">
+              <div className="bg-[url('/sg.png')] bg-[50%_50%] bg-cover bg-no-repeat h-16 w-28 mt-2 mr-5 ml-[-2rem]">
+              </div>
+              <div className="whitespace-normal break-words pt-3">
                 {strategicGoals}
               </div>
             </div>
           </div>
-        </div>
-        {/* Edit button */}
-        <div className="text-center self-end">
-          <Button href="/profile/[id]/edit" className="flex w-40 h-10 mr-12 bg-[#8a252c] text-white font-bold text-xl px-12 py-5 border[0.1rem] border-white mb-4 hover:bg-[#eec160] hover:text-[#8a252c]">
-            Edit
-          </Button>
-        </div>
       </Card>
+      </div>
     </div>
   );
 }

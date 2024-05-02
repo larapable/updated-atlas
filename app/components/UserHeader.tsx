@@ -17,8 +17,8 @@ export default function UserHeader() {
   };
 
   return (
-    <div className="bg-white flex pl-32 pr-10 py-10">
-      <div className=" shadow-lg bg-[#F0E8E8] border-opacity-60 rounded-lg w-[38rem] flex items-center py-2 px-2">
+    <div className="bg-white flex pl-10 pr-10 py-5 h-20">
+      <div className=" shadow-lg bg-[#F0E8E8] border-opacity-60 rounded-lg w-[38rem] flex items-center py-5 px-5">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           fill="none"

@@ -5,7 +5,7 @@ import Goals from '/models/goals.js';
 export async function GET(req, { params }) {
   try {
     const { department_id } = params;
-    console.log("Fetching goals details for ID:", department_id);
+    console.log(" ID:", department_id);
 
     // Fetch department details from the database
     const department = await Goals.getGoalsByDepartmentId(department_id);

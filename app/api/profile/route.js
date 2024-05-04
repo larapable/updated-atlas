@@ -3,12 +3,12 @@ import Department from '@/models/department.js';
 
 export async function PUT(req) {
     try {
-        const { departmentLandline, location, university, departmentDescription, departmentId } = await req.json();
+        const { headOfficer, departmentLandline, location, university, departmentDescription, departmentId } = await req.json();
 
         console.log("Department", departmentId);
         
         // Update department details in the database
-        const updated = await Department.updateDepartmentDetails(departmentId, departmentLandline, location, university, departmentDescription);
+        const updated = await Department.updateDepartmentDetails(departmentId, headOfficer, departmentLandline, location, university, departmentDescription);
 
         if (updated) {
             // Department details successfully updated

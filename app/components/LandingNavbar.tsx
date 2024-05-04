@@ -30,7 +30,7 @@ const Navbar = () => {
         <Link href="/">
           <Image src="/logo.png" alt="logo" width={100} height={80}/>
         </Link>
-        <div className="flex flex-row justify-between w-[44.5rem] box-sizing-border mr-[-2rem]">
+        <div className="flex flex-row justify-between w-[90] box-sizing-border mr-[-2rem]">
           <ul className="hidden h-full gap-12 lg:flex">
             <span className="regular-24 text-white flexCenter cursor-pointer pb-1.5 transition-all hover:font-bold hover:text-[#FAD655] mt-4" onClick={handleHomeClick}>
               Home

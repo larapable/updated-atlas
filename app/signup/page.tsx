@@ -53,16 +53,16 @@ export default function SignupPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email,username}),
       });
 
-      const { user } = await resUserExists.json();
-      if (user) {
-        setErrorMessage("User already exists.");
-        setErrorModalOpen(true);
-        return;
-      }
+      const { user, userName } = await resUserExists.json(); // Assuming the server responds with both user and userName
 
+      if (user || userName) {
+          setErrorMessage("User already exists.");
+          setErrorModalOpen(true);
+          return;
+      }
       const res = await fetch("api/register", {
         method: "POST",
         headers: {

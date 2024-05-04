@@ -4,11 +4,12 @@ import User from '@/models/user.js';
 
 export async function POST(req) {
     try {
-        const { email } = await req.json();
+        const { email,username} = await req.json();
 
         const user = await User.findOne(email);
+        const userName = await User.findUsername(username);
 
-        return NextResponse.json({ user });
+        return NextResponse.json({ user, userName});
     } catch (error) {
         console.error("Error:", error);
         return NextResponse.json({
@@ -16,4 +17,6 @@ export async function POST(req) {
             status: 500
         });
     }
+
+    
 }

@@ -4,7 +4,7 @@ import Goals from '/models/goals.js';
 export async function POST(req) {
     try {
 
-        const{officeVision, valueProposition, strategicGoals, strategicGoals2, strategicGoals3, selectedDate, selectedEndDate} = await req.json();
+        const{officeVision, valueProposition, strategicGoals, strategicGoals2, strategicGoals3, selectedDate, selectedEndDate,department_id} = await req.json();
         
         console.log("Vision: ", officeVision);
         console.log("Proposition: ", valueProposition);
@@ -13,7 +13,7 @@ export async function POST(req) {
         const startDate = new Date(selectedDate).toISOString().slice(0, 19).replace('T', ' ');
         const endDate = new Date(selectedEndDate).toISOString().slice(0, 19).replace('T', ' ');
 
-        await Goals.postGoals(officeVision, valueProposition, strategicGoals, strategicGoals2, strategicGoals3, startDate, endDate);
+        await Goals.postGoals(officeVision, valueProposition, strategicGoals, strategicGoals2, strategicGoals3, startDate, endDate,department_id);
 
         return NextResponse.json({ message:"User registered."}, 
         {status: 201});

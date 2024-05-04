@@ -15,6 +15,7 @@ export async function GET(req, { params }) {
       // Department found, return the department details
       const {
         department_name,
+        headOfficer,
         departmentLandline,
         location,
         university,
@@ -25,6 +26,7 @@ export async function GET(req, { params }) {
 
       return NextResponse.json({
         department_name,
+        headOfficer,
         departmentLandline,
         location,
         university,

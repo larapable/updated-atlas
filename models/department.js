@@ -54,16 +54,16 @@ async findById(id) {
 },
 
 
- async updateDepartmentDetails(id, departmentLandline, location, university, departmentDescription) {
+ async updateDepartmentDetails(id, headOfficer, departmentLandline, location, university, departmentDescription) {
     try {
         // Execute the UPDATE query to update department details
         const result = await excuteQuery({
             query: `
                 UPDATE department
-                SET departmentLandline = ?, location = ?, university = ?, description = ?
+                SET headOfficer = ?, departmentLandline = ?, location = ?, university = ?, description = ?
                 WHERE id = ?
             `,
-            values: [departmentLandline, location, university, departmentDescription, id]
+            values: [headOfficer, departmentLandline, location, university, departmentDescription, id]
         });
 
         if (result.affectedRows > 0) {

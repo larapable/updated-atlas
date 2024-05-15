@@ -32,6 +32,8 @@ export default function UserEditProfile() {
 
   const department_id= user?.department_id;
   console.log("Department: ",department_id);
+  const user_id = user?.id;
+  console.log("ID: ",user_id);
 
   useEffect(() => {
     const fetchUserProfileData = async () => {

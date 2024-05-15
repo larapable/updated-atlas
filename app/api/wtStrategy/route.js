@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import SWStrat from '/models/swot.js';
+import WTStrat from '/models/wtStrategy.js';
 
 export async function POST(req) {
     try {
@@ -8,11 +8,11 @@ export async function POST(req) {
         console.log("API Response:", response);
 
         try {
-            await SWStrat.postSWStrat(response);
-            return NextResponse.json({ message: "S-O Posted." }, { status: 201 });
+            await WTStrat.postWTStrat(response);
+            return NextResponse.json({ message: "W-T Posted." }, { status: 201 });
         } catch (error) {
             console.error("Error posting S-O:", error);
-            return NextResponse.json({ message: "An error occurred while posting S-O." }, { status: 500 });
+            return NextResponse.json({ message: "An error occurred while posting W-T." }, { status: 500 });
         }
     } catch (error) {
         console.error("Error handling request:", error);

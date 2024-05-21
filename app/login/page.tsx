@@ -10,6 +10,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [errorModalOpen, setErrorModalOpen] = useState(false);
+  const handleCancelSave = () => {
+    setErrorModalOpen(false);
+  };
 
   const router = useRouter();
 
@@ -21,6 +24,14 @@ export default function LoginPage() {
     e: React.MouseEvent<HTMLButtonElement, MouseEvent>
   ) => {
     e.preventDefault();
+    
+    if (!username || !password) {
+      setErrorMessage(
+        "You have left a field empty. Please take a moment to complete all the necessary information."
+      );
+      setErrorModalOpen(true);
+      return;
+    }
 
     try {
       const res = await signIn("credentials", {
@@ -30,7 +41,9 @@ export default function LoginPage() {
       });
 
       if (res && res.error) {
-        setErrorMessage("Invalid Credentials");
+        setErrorMessage(
+          "We're sorry, but the credentials you entered are incorrect. Please double-check your username and password and try again."
+        );
         setErrorModalOpen(true);
         return;
       }
@@ -67,12 +80,12 @@ export default function LoginPage() {
             className="flex-1 font-medium placeholder-[#807979] bg-transparent focus:outline-none text-[1rem] px-3 py-1 mr-4"
           />
         </div>
-        <Button
+        <button
           className="rounded-lg bg-[#8a252c] text-white font-bold text-xl w-[38rem] px-12 py-5 border[0.1rem] border-white mb-4 hover:bg-[#eec160] hover:text-[#8a252c] "
           onClick={handleSubmit}
         >
           Login
-        </Button>
+        </button>
         <div className="text-lg mb-2 font-light">
           Dont have an account?{" "}
           <a href="/signup" className="font-bold text-black hover:underline">
@@ -130,20 +143,39 @@ export default function LoginPage() {
         aria-labelledby="error-modal-title"
         aria-describedby="error-modal-description"
       >
-        <div className="flex flex-col items-center mt-80">
-          <div className=" bg-white px-4 text-center justify-center shadow-2xl rounded-2xl mt-2">
-            <p id="error-modal-title" className=" text-6xl font-bold text-red-500">
-              Error!
+        <div className="flex flex-col items-center justify-center h-full">
+          <div className=" bg-white p-8 rounded-lg shadow-md h-72 w-[40rem] text-center relative">
+            <button
+              onClick={handleCancelSave}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                className="w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+            <p id="error-modal-title" className=" text-3xl font-bold mb-4">
+              Attention!
             </p>
-            <p id="error-modal-description" className=" text-3xl m-5">
+            <p id="error-modal-description" className=" text-xl mb-4 mt-8">
               {errorMessage}
             </p>
-            <Button
-              className="rounded-lg bg-[#8a252c] text-white font-bold text-xl w-40 px-12 py-5 border[0.1rem] border-white mb-2 hover:bg-[#eec160] hover:text-[#8a252c]"
+            <button
+              className="rounded-xl bg-[#8a252c] text-white text-xl w-40 px-4 py-2 border[0.1rem] border-white hover:bg-[#a8444b] font-medium hover:text-[#fffff] focus:outline-none h-12 mt-5"
               onClick={handleCloseErrorModal}
             >
-              Close
-            </Button>
+              Enter again
+            </button>
           </div>
         </div>
       </Modal>

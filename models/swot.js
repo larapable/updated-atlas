@@ -61,10 +61,20 @@ const Swot = {
                 query: 'UPDATE strength SET value = ? WHERE id = ? AND department_id = ?',
                 values: [value, id, departmentId]
             });
-
+    
             // Check if the query was successful
             if (result.affectedRows === 1) {
-                return { success: true, message: 'Strength updated successfully' };
+                // Query the database to fetch the updated strength
+                const updatedStrength = await excuteQuery({
+                    query: 'SELECT * FROM strength WHERE id = ? AND department_id = ?',
+                    values: [id, departmentId]
+                });
+    
+                // Return the success message along with the updated strength value
+                return {
+                    success: true,
+                    updatedStrength: updatedStrength[0] // Assuming only one row is updated
+                };
             } else {
                 return { success: false, message: 'Failed to update strength' };
             }
@@ -73,7 +83,7 @@ const Swot = {
             return { success: false, message: 'An error occurred while updating strength' };
         }
     },
-
+    
     async deleteStrength(id, departmentId) {
         try {
             // Execute the SQL query to delete the strength
@@ -151,36 +161,46 @@ const Swot = {
                 query: 'UPDATE weakness SET value = ? WHERE id = ? AND department_id = ?',
                 values: [value, id, departmentId]
             });
-
+    
             // Check if the query was successful
             if (result.affectedRows === 1) {
-                return { success: true, message: 'Weakness updated successfully' };
+                // Query the database to fetch the updated strength
+                const updatedWeakness = await excuteQuery({
+                    query: 'SELECT * FROM weakness WHERE id = ? AND department_id = ?',
+                    values: [id, departmentId]
+                });
+    
+                // Return the success message along with the updated strength value
+                return {
+                    success: true,
+                    updatedWeakness: updatedWeakness[0] // Assuming only one row is updated
+                };
             } else {
                 return { success: false, message: 'Failed to update weakness' };
             }
         } catch (error) {
-            console.error('Error updating strength:', error);
+            console.error('Error updating weakness:', error);
             return { success: false, message: 'An error occurred while updating weakness' };
         }
     },
 
-    async deleteStrength(id, departmentId) {
+    async deleteWeakness(id, departmentId) {
         try {
             // Execute the SQL query to delete the strength
             const result = await excuteQuery({
-                query: 'DELETE FROM strength WHERE id = ? AND department_id = ?',
+                query: 'DELETE FROM weakness WHERE id = ? AND department_id = ?',
                 values: [id, departmentId]
             });
 
             // Check if the query was successful
             if (result.affectedRows === 1) {
-                return { success: true, message: 'Strength deleted successfully' };
+                return { success: true, message: 'Weakness deleted successfully' };
             } else {
-                return { success: false, message: 'Failed to delete strength' };
+                return { success: false, message: 'Failed to delete weakness' };
             }
         } catch (error) {
-            console.error('Error deleting strength:', error);
-            return { success: false, message: 'An error occurred while deleting strength' };
+            console.error('Error deleting weakness:', error);
+            return { success: false, message: 'An error occurred while deleting weakness' };
         }
     },
 
@@ -234,6 +254,56 @@ const Swot = {
         }
     },
 
+    async editOpportunities(id, value, departmentId) {
+        try {
+            // Execute the SQL query to update the strength
+            const result = await excuteQuery({
+                query: 'UPDATE opportunities SET value = ? WHERE id = ? AND department_id = ?',
+                values: [value, id, departmentId]
+            });
+    
+            // Check if the query was successful
+            if (result.affectedRows === 1) {
+                // Query the database to fetch the updated strength
+                const updatedOpportunities = await excuteQuery({
+                    query: 'SELECT * FROM opportunities WHERE id = ? AND department_id = ?',
+                    values: [id, departmentId]
+                });
+    
+                // Return the success message along with the updated strength value
+                return {
+                    success: true,
+                    updatedOpportunities: updatedOpportunities[0] // Assuming only one row is updated
+                };
+            } else {
+                return { success: false, message: 'Failed to update opportunities' };
+            }
+        } catch (error) {
+            console.error('Error updating opportunities:', error);
+            return { success: false, message: 'An error occurred while updating opportunities' };
+        }
+    },
+
+    async deleteOpportunities(id, departmentId) {
+        try {
+            // Execute the SQL query to delete the strength
+            const result = await excuteQuery({
+                query: 'DELETE FROM opportunities WHERE id = ? AND department_id = ?',
+                values: [id, departmentId]
+            });
+
+            // Check if the query was successful
+            if (result.affectedRows === 1) {
+                return { success: true, message: 'Opportunities deleted successfully' };
+            } else {
+                return { success: false, message: 'Failed to delete opportunities' };
+            }
+        } catch (error) {
+            console.error('Error deleting opportunities:', error);
+            return { success: false, message: 'An error occurred while deleting opportunities' };
+        }
+    },
+
 
     async addThreats(value, departmentId) {
         try {
@@ -284,7 +354,59 @@ const Swot = {
             console.error('Error fetching threats:', error);
             return { success: false, message: 'An error occurred while fetching threats' };
         }
-    }
+    },
+    
+
+    async editThreats(id, value, departmentId) {
+        try {
+            // Execute the SQL query to update the strength
+            const result = await excuteQuery({
+                query: 'UPDATE threats SET value = ? WHERE id = ? AND department_id = ?',
+                values: [value, id, departmentId]
+            });
+    
+            // Check if the query was successful
+            if (result.affectedRows === 1) {
+                // Query the database to fetch the updated strength
+                const updatedThreats = await excuteQuery({
+                    query: 'SELECT * FROM threats WHERE id = ? AND department_id = ?',
+                    values: [id, departmentId]
+                });
+    
+                // Return the success message along with the updated strength value
+                return {
+                    success: true,
+                    updatedThreats: updatedThreats[0] // Assuming only one row is updated
+                };
+            } else {
+                return { success: false, message: 'Failed to update threats' };
+            }
+        } catch (error) {
+            console.error('Error updating threats:', error);
+            return { success: false, message: 'An error occurred while updating threats' };
+        }
+    },
+
+    async deleteThreats(id, departmentId) {
+        try {
+            // Execute the SQL query to delete the strength
+            const result = await excuteQuery({
+                query: 'DELETE FROM threats WHERE id = ? AND department_id = ?',
+                values: [id, departmentId]
+            });
+
+            // Check if the query was successful
+            if (result.affectedRows === 1) {
+                return { success: true, message: 'Threats deleted successfully' };
+            } else {
+                return { success: false, message: 'Failed to delete threats' };
+            }
+        } catch (error) {
+            console.error('Error deleting threats:', error);
+            return { success: false, message: 'An error occurred while deleting threats' };
+        }
+    },
+
     
 
 

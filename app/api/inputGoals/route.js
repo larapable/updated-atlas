@@ -3,23 +3,41 @@ import Goals from '/models/goals.js';
 
 export async function POST(req) {
     try {
+        const {
+            officeVision,
+            valueProposition,
+            strategicGoals,
+            strategicGoals2,
+            strategicGoals3,
+            selectedDate,
+            selectedEndDate,
+            department_id,
+        } = await req.json();
 
-        const{officeVision, valueProposition, strategicGoals, strategicGoals2, strategicGoals3, selectedDate, selectedEndDate,department_id} = await req.json();
-        
-        console.log("Vision: ", officeVision);
-        console.log("Proposition: ", valueProposition);
-        console.log("Goals: ", strategicGoals);
+        // Parse selectedDate and selectedEndDate without modification
+        const startDate = new Date(selectedDate);
+        const endDate = new Date(selectedEndDate);
 
-        const startDate = new Date(selectedDate).toISOString().slice(0, 19).replace('T', ' ');
-        const endDate = new Date(selectedEndDate).toISOString().slice(0, 19).replace('T', ' ');
+        await Goals.postGoals(
+            officeVision,
+            valueProposition,
+            strategicGoals,
+            strategicGoals2,
+            strategicGoals3,
+            startDate,
+            endDate,
+            department_id
+        );
 
-        await Goals.postGoals(officeVision, valueProposition, strategicGoals, strategicGoals2, strategicGoals3, startDate, endDate,department_id);
-
-        return NextResponse.json({ message:"User registered."}, 
-        {status: 201});
-    } catch(error)  {
-        return NextResponse.json({
-            message: "An error occured while registering the user."},
-            {status: 500});
+        return NextResponse.json(
+            { message: "New goals created." },
+            { status: 201 }
+        );
+    } catch (error) {
+        console.error("Error:", error);
+        return NextResponse.json(
+            { message: "An error occurred while handling the request." },
+            { status: 500 }
+        );
     }
 }

@@ -1,3 +1,5 @@
+
+
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import Navbar from "../components/Navbar";
@@ -19,23 +21,329 @@ const Swot = () => {
   const [woApiResponse, setWoApiResponse] = useState("");
   const [stApiResponse, setStApiResponse] = useState("");
   const [wtApiResponse, setWtApiResponse] = useState("");
+  const [counter, setCounter] = useState(1);
+  const delay = (ms: number | undefined) => {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  };
 
   const { data: session } = useSession();
- 
-
-
 
   let user;
   if(session?.user?.name) 
     user = JSON.parse(session?.user?.name as string);
     const department_id = user?.department_id;
-   
-
-    
-  const generateStrategies = async () => {
   
+  const generateStrategies = async () => {
+    callWTAPI();
+    callSTAPI();
+    callWOAPI();
+    callSOAPI();
   }
+  
+  const callWTAPI = async () => {
+    try {
+        const systemPrompt =
+          "You will provide specific actionable strategies that mitigate your weaknesses (W) to avoid threats (T) and must keep your entire response within 1 sentence. No extra words. If the text is blank, output 'Field is blank.'.  Do not output any markdown. You should output in this format: W1T1: sentence here. '(||)' (new line here) \nW2T2: sentence here.Generate as much as you can from the inputted SWOT";
+      
+          const weaknessesInput = fetchedWeaknesses
+        .map(
+          (weakness, index) =>
+            `${index + 1}. ${weakness.id}: ${weakness.value}`
+        )
+        .join("\n");
+  
+      const threatsInput = fetchedThreats
+        .map(
+          (threat, index) =>
+            `${index + 1}. ${threat.id}: ${threat.value}`
+        )
+        .join("\n");
+  
+      console.log('Weaknesses Input:', weaknessesInput);
+      console.log('threats Input:', threatsInput);
+  
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyATO5xndEGhEgXrHdeYLOiTbZqtUwYuZqE`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `${systemPrompt} \n\nWeaknesses:\n${weaknessesInput}\n\nThreats:\n${threatsInput}`,
+                  },
+                ],
+              },
+            ],
+          }),
+        }
+      );
+  
+      const data = await response.json();
+      console.log(response);
+      const apiResponse =
+        data.candidates?.[0]?.content?.parts?.[0]?.text ||
+        "No response received";
+  
+      // Split the API response by "(||)" followed by a space
+      const responseArray = apiResponse.split("(||)");
+  
+      // Save each response from the array individually to the database
+      for (const response of responseArray) {
+        const databaseResponse = await fetch("/api/wtStrategy", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ response }),
+        });
+  
+        if (!databaseResponse.ok) {
+          console.error("Error saving response to database", databaseResponse);
+        }
+      }
+  
+      setWtApiResponse(apiResponse);
+      console.log("wt api: ", responseArray); // Log the array of responses
+    } catch (error) {
+      console.error("Error calling Gemini API:", error);
+      setWtApiResponse("An error occurred while calling the API");
+    }
+  };
+    
+  
+  const callSTAPI = async () => {
+    try {
+      const systemPrompt =
+        "You will provide specific actionable strategies that leverage your strengths (S) to avoid threats (T) and must keep your entire response within 1 sentence. No extra words. If the text is blank, output 'Field is blank.'. Do not output any markdown. You should output in this format: S1T1: sentence here. '(||)' (new line here)S2T2: sentence here.Generate as much as you can from the inputted SWOT.";
+  
+  
+      const strengthsInput = fetchedStrengths
+        .map(
+          (strength, index) =>
+            `${index + 1}. ${strength.id}: ${strength.value}`
+        )
+        .join("\n");
+  
+      const threatsInput = fetchedThreats
+        .map(
+          (threat, index) =>
+            `${index + 1}. ${threat.id}: ${threat.value}`
+        )
+        .join("\n");
+  
+      console.log('strengths Input:', strengthsInput);
+      console.log('threats Input:', threatsInput);
+  
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyATO5xndEGhEgXrHdeYLOiTbZqtUwYuZqE`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `${systemPrompt} \n\nStrengths:\n${strengthsInput}\n\nThreats:\n${threatsInput}`,
+                  },
+                ],
+              },
+            ],
+          }),
+        }
+      );
+  
+      const data = await response.json();
+      console.log("st api: ", response);
+      const apiResponse =
+        data.candidates?.[0]?.content?.parts?.[0]?.text ||
+        "No response received";
+  
+      // Split the API response by "(||)" followed by a space
+      const responseArray = apiResponse.split("(||)");
+  
+      // Save each response from the array individually to the database
+      for (const response of responseArray) {
+        const databaseResponse = await fetch("/api/stStrategy", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ response }),
+        });
+  
+        if (!databaseResponse.ok) {
+          console.error("Error saving response to database", databaseResponse);
+        }
+      }
+  
+      setStApiResponse(apiResponse);
+      console.log(responseArray); // Log the array of responses
+    } catch (error) {
+      console.error("Error calling Gemini API:", error);
+      setStApiResponse("An error occurred while calling the API");
+    }
+  };
+ 
 
+  const callSOAPI = async () => {
+    try {
+      const systemPrompt =
+        "You will provide specific actionable strategies that leverage your strengths (S) to capitalize on opportunities (O) and must keep your entire response within 1 sentence. No extra words. If the text is blank, output 'Field is blank.'.  Do not output any markdown. You should output in this format: S1O1: sentence here. '(||)' (new line here)S2O2: sentence here.Generate as much as you can from the inputted SWOT.";
+    
+        const strengthsInput = fetchedStrengths
+        .map(
+          (strength, index) =>
+            `${index + 1}. ${strength.id}: ${strength.value}`
+        )
+        .join("\n");
+  
+      const OpportunitiesInput = fetchedOpportunities
+        .map(
+          (opportunity, index) =>
+            `${index + 1}. ${opportunity.id}: ${opportunity.value}`
+        )
+        .join("\n");
+  
+      console.log('Strengths Input:', strengthsInput);
+      console.log('Opportunities Input:', OpportunitiesInput);
+  
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyATO5xndEGhEgXrHdeYLOiTbZqtUwYuZqE`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `${systemPrompt} \n\nStrengths:\n${strengthsInput}\n\nOpportunities:\n${OpportunitiesInput}`,
+                  },
+                ],
+              },
+            ],
+          }),
+        }
+      );
+  
+      const data = await response.json();
+      console.log(response);
+      const apiResponse =
+        data.candidates?.[0]?.content?.parts?.[0]?.text ||
+        "No response received";
+  
+      // Split the API response by "(||)" followed by a space
+      const responseArray = apiResponse.split("(||)");
+  
+      // Save each response from the array individually to the database
+      for (const response of responseArray) {
+        const databaseResponse = await fetch("/api/soStrategy", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ response }),
+        });
+  
+        if (!databaseResponse.ok) {
+          console.error("Error saving response to database", databaseResponse);
+        }
+      }
+  
+      setSoApiResponse(apiResponse);
+      console.log(responseArray); // Log the array of responses
+    } catch (error) {
+      console.error("Error calling Gemini API:", error);
+      setSoApiResponse("An error occurred while calling the API");
+    }
+  };
+
+  const callWOAPI = async () => {
+    try {
+      const systemPrompt =
+        "You will provide specific actionable strategies that mitigate your weaknesses (W) to capitalize on opportunities (O) and must keep your entire response within 1 sentence. No extra words. If the text is blank, output 'Field is blank.'. Do not output any markdown. You should output in this format: W1O1: sentence here. '(||)' (new line here)W2O2: sentence here.Generate as much as you can from the inputted SWOT.";
+  
+      const weaknessesInput = fetchedWeaknesses
+        .map(
+          (weakness, index) =>
+            `${index + 1}. ${weakness.id}: ${weakness.value}`
+        )
+        .join("\n");
+  
+      const OpportunitiesInput = fetchedOpportunities
+        .map(
+          (opportunity, index) =>
+            `${index + 1}. ${opportunity.id}: ${opportunity.value}`
+        )
+        .join("\n");
+  
+      console.log('Weaknesses Input:', weaknessesInput);
+      console.log('Opportunities Input:', OpportunitiesInput);
+  
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyATO5xndEGhEgXrHdeYLOiTbZqtUwYuZqE`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `${systemPrompt} \n\nWeaknesses:\n${weaknessesInput}\n\Opportunities:\n${OpportunitiesInput}`,
+                  },
+                ],
+              },
+            ],
+          }),
+        }
+      );
+  
+      const data = await response.json();
+      console.log(response);
+      const apiResponse =
+        data.candidates?.[0]?.content?.parts?.[0]?.text ||
+        "No response received";
+  
+      // Split the API response by "(||)" followed by a space
+      const responseArray = apiResponse.split("(||)");
+  
+      // Save each response from the array individually to the database
+      for (const response of responseArray) {
+        const databaseResponse = await fetch("/api/woStrategy", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ response }),
+        });
+  
+        if (!databaseResponse.ok) {
+          console.error("Error saving response to database", databaseResponse);
+        }
+      }
+  
+      setWoApiResponse(apiResponse);
+      console.log(responseArray); // Log the array of responses
+    } catch (error) {
+      console.error("Error calling Gemini API:", error);
+      setWoApiResponse("An error occurred while calling the API");
+    }
+  };
+
+  
   // Reusable SWOT function
   const useSwot = (initialItems: SwotItem[] = []) => {
     const [items, setItems] = useState<SwotItem[]>(initialItems);
@@ -51,90 +359,175 @@ const Swot = () => {
       setNewItem(event.target.value);
     };
 
-    const add = async (event: React.KeyboardEvent, category: string) => {
-      if (event.key === "Enter" && newItem.trim()) {
-    if (fetchedStrengths.length >= 5) {
-              toast.error("Maximum limit of 5 items reached");
-            } else {
-        try {
-          // Send data to backend
-          const response = await fetch(`api/${category}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ value: newItem.trim(), department_id: department_id }),
-          });
-    
-          if (!response.ok) {
-            throw new Error(`Failed to add ${category}. Please try again.`);
-          }
-    
-          const { message, newItem: newItemData } = await response.json();
-          console.log(`Added ${category}:`, newItemData);
-    
-          if (response.status === 201) {
-            // Update the appropriate state based on the category
-            updateState(category, newItemData);
-            setNewItem("");
-            setIsAdding(false);
-            toast.success(message);
-          } else {
-            console.error(`Error adding ${category}:`, message);
-            toast.error(message);
-          }
-    
-        } catch (error: any) {
-          console.error(`Error adding ${category}:`, error.message);
-          toast.error('An unexpected error occurred');
-        }
-       }
-      }
-    };
-    
-    const updateState = (category: string, newItemData: any) => {
-      switch (category) {
-        case 'strengths':
-          setFetchedStrengths(prevStrengths => [...prevStrengths, newItemData]);
-          fetchUpdatedData('strengths'); // Fetch updated strengths data
-          break;
-        case 'weakness':
-          setFetchedWeaknesses(prevWeaknesses => [...prevWeaknesses, newItemData]);
-          fetchUpdatedData('weakness'); // Fetch updated weaknesses data
-          break;
-        case 'opportunities':
-          setFetchedOpportunities(prevOpportunities => [...prevOpportunities, newItemData]);
-          fetchUpdatedData('opportunities'); // Fetch updated opportunities data
-          break;
-        case 'threats':
-          setFetchedThreats(prevThreats => [...prevThreats, newItemData]);
-          fetchUpdatedData('threats'); // Fetch updated threats data
-          break;
-        default:
-          break;
-      }
-    };
-    
     const addStrength = async (event: React.KeyboardEvent) => {
-      await add(event, 'strengths');
-    };
+      if (event.key === "Enter" && newItem.trim()) {
+        if (fetchedStrengths.length >= 5) {
+          toast.error("Maximum limit of 5 items reached");
+        } else {
+          try {
+            // Send data to backend
+            const response = await fetch(`api/strengths`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ value: newItem.trim(), department_id: department_id }),
+            });
     
-    const addWeakness = async (event: React.KeyboardEvent) => {
-      await add(event, 'weakness');
+            if (!response.ok) {
+              throw new Error('Failed to add item. Please try again.');
+            }
+    
+            const { message, newStrength } = await response.json();
+    
+            if (response.status === 201) {
+              // Update fetchedStrengths state and wait for it to complete
+              const updatedStrength = { ...newStrength, id: newStrength.data.id };
+              setFetchedStrengths(prevStrengths => [...prevStrengths, updatedStrength]);
+              setNewItem("");
+              setIsAdding(false);
+              toast.success(message);
+
+              fetchUpdatedStrengths();
+            } else {
+              console.error('Error adding strength:', message);
+              toast.error(message);
+            }
+    
+          } catch (error: any) {
+            console.error('Error adding item:', error.message);
+            toast.error('An unexpected error occurred');
+          }
+        }
+      }
     };
 
+    const addWeakness  = async (event: React.KeyboardEvent) => {
+      if (event.key === "Enter" && newItem.trim()) {
+        if (fetchedStrengths.length >= 5) {
+          toast.error("Maximum limit of 5 items reached");
+        } else {
+          try {
+            // Send data to backend
+            const response = await fetch(`api/weaknesses`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ value: newItem.trim(), department_id: department_id }),
+            });
+    
+            if (!response.ok) {
+              throw new Error('Failed to add item. Please try again.');
+            }
+    
+            const { message, newWeakness } = await response.json();
+
+            if (response.status === 201) {
+              const updatedWeakness = { ...newWeakness, id: newWeakness.data.id };
+              setFetchedWeaknesses(prevWeaknesses => [...prevWeaknesses, updatedWeakness]);
+              setNewItem("");
+              setIsAdding(false);
+              toast.success(message);
+            
+
+              fetchUpdatedWeaknesses();
+            } else {
+              console.error('Error adding strength:', message);
+              toast.error(message);
+            }
+    
+          } catch (error: any) {
+            console.error('Error adding item:', error.message);
+            toast.error('An unexpected error occurred');
+          }
+        }
+      }
+    };
+    
     const addOpportunities = async (event: React.KeyboardEvent) => {
-      await add(event, 'opportunities');
-    };
-
-    const addThreats = async (event: React.KeyboardEvent) => {
-      await add(event, 'threats');
-    };
-
-    const edit = async (id: string, newValue: string, department_id: string, endpoint: string) => {
-      try {
+      if (event.key === "Enter" && newItem.trim()) {
+        if (fetchedOpportunities.length >= 5) {
+          toast.error("Maximum limit of 5 items reached");
+        } else {
+          try {
+            const response = await fetch(`api/opportunities`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ value: newItem.trim(), department_id: department_id }),
+            });
     
-        const response = await fetch(`api/${endpoint}`, {
+            if (!response.ok) {
+              throw new Error('Failed to add item. Please try again.');
+            }
+    
+            const { message, newOpportunities } = await response.json();
+    
+            if (response.status === 201) {
+              const updatedOpportunities = { ...newOpportunities, id: newOpportunities.data.id };
+              setFetchedOpportunities(prevOpportunities => [...prevOpportunities, updatedOpportunities]);
+              setNewItem("");
+              setIsAdding(false);
+              toast.success(message);
+    
+              fetchUpdatedOpportunities();
+            } else {
+              console.error('Error adding opportunity:', message);
+              toast.error(message);
+            }
+          } catch (error: any) {
+            console.error('Error adding item:', error.message);
+            toast.error('An unexpected error occurred');
+          }
+        }
+      }
+    };
+    
+    const addThreats = async (event: React.KeyboardEvent) => {
+      if (event.key === "Enter" && newItem.trim()) {
+        if (fetchedThreats.length >= 5) {
+          toast.error("Maximum limit of 5 items reached");
+        } else {
+          try {
+            const response = await fetch(`api/threats`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ value: newItem.trim(), department_id: department_id }),
+            });
+    
+            if (!response.ok) {
+              throw new Error('Failed to add item. Please try again.');
+            }
+    
+            const { message, newThreats } = await response.json();
+    
+            if (response.status === 201) {
+              const updatedThreats = { ...newThreats, id: newThreats.data.id };
+              setFetchedThreats(prevThreats => [...prevThreats, updatedThreats]);
+              setNewItem("");
+              setIsAdding(false);
+              toast.success(message);
+    
+              fetchUpdatedThreats();
+            } else {
+              console.error('Error adding threat:', message);
+              toast.error(message);
+            }
+          } catch (error: any) {
+            console.error('Error adding item:', error.message);
+            toast.error('An unexpected error occurred');
+          }
+        }
+      }
+    };
+    
+    const EditStrength = async (id: string, newValue: string, department_id: string) => {
+      try {
+        const response = await fetch(`api/strengths`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -146,51 +539,125 @@ const Swot = () => {
           throw new Error('Failed to update item. Please try again.');
         }
     
-        const updatedStrength = await response.json();
-    
-        // Add the prefix back to the id of the updated strength
-        updatedStrength.id = id.charAt(0) + updatedStrength.id;
-    
-        // Update fetchedStrengths state
+        const {updatedstr }= await response.json();  
         setFetchedStrengths(prevStrengths =>
-          prevStrengths.map(strength => strength.id === id ? updatedStrength : strength)
+          prevStrengths.map(strength => {
+            if (strength.id === updatedstr.updatedStrength.id) {
+             
+              return updatedstr.updatedStrength;
+            } else {
+             
+              return strength;
+            }
+          })
         );
     
-        // Use updatedStrength to update items state
-        setItems(prevItems =>
-          prevItems.map(item => item.id === id ? updatedStrength : item)
-        );
-    
-        console.log(`${endpoint} updated successfully`);
-      } catch (error:any) {
+        console.log(`Strengths updated successfully`);
+      } catch (error: any) {
         console.error('Error updating item:', error.message);
       }
     };
     
+    const EditWeakness = async (id: string, newValue: string, department_id: string) => {
+      try {
+        const response = await fetch(`api/weaknesses`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ id: id, newValue: newValue, department_id: department_id }),
+        });
     
+        if (!response.ok) {
+          throw new Error('Failed to update item. Please try again.');
+        }
     
+        const {updatedwks }= await response.json();
+  
+        setFetchedWeaknesses(prevWeaknesses =>
+          prevWeaknesses.map(weakness => {
+         
+            if (weakness.id === updatedwks.updatedWeakness.id) {
+              
+              return updatedwks.updatedWeakness;
+            } else {
+           
+              return weakness;
+            }
+          })
+        );
     
-    const EditStrength = async (id: string, newValue: string, department_id: string) => {
-      await edit(id, newValue, department_id, 'strengths');
+        console.log(`Weakness updated successfully`);
+      } catch (error: any) {
+        console.error('Error updating item:', error.message);
+      }
     };
 
-    const EditWeakness = async (id: string, newValue: string, department_id: string) => {
-      await edit(id, newValue, department_id, 'weakness');
-    }; 
-
     const EditOpportunities = async (id: string, newValue: string, department_id: string) => {
-      await edit(id, newValue, department_id, 'opportunites');
-    }; 
-   
+      try {
+        const response = await fetch(`api/opportunities`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ id: id, newValue: newValue, department_id: department_id }),
+        });
+    
+        if (!response.ok) {
+          throw new Error('Failed to update item. Please try again.');
+        }
+    
+        const {updatedOpp }= await response.json();
+
+        setFetchedOpportunities(prevOpportunities =>
+          prevOpportunities.map(opportunity => {
+            if (opportunity.id === updatedOpp.updatedOpportunities.id) {
+              return updatedOpp.updatedOpportunities;
+            } else {
+              return opportunity;
+            }
+          })
+        );
+    
+        console.log(`Opportunites updated successfully`);
+      } catch (error: any) {
+        console.error('Error updating item:', error.message);
+      }
+    };
+
     const EditThreats = async (id: string, newValue: string, department_id: string) => {
-      await edit(id, newValue, department_id, 'threats');
-    }; 
-   
-   
+      try {
+        const response = await fetch(`api/threats`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ id: id, newValue: newValue, department_id: department_id }),
+        });
+    
+        if (!response.ok) {
+          throw new Error('Failed to update item. Please try again.');
+        }
+
+        const {updatedthr }= await response.json();
+        setFetchedThreats(prevThreats =>
+          prevThreats.map(threat => {
+            if (threat.id === updatedthr.updatedThreats.id) {
+              return updatedthr.updatedThreats;
+            } else {
+              return threat;
+            }
+          })
+        );
+    
+        console.log(`Threats updated successfully`);
+      } catch (error: any) {
+        console.error('Error updating item:', error.message);
+      }
+    };
 
     const deleteItem = async (id: string, department_id: string, endpoint: string) => {
       try {
-    
         const response = await fetch(`api/${endpoint}`, {
           method: 'DELETE',
           headers: {
@@ -200,35 +667,60 @@ const Swot = () => {
         });
     
         if (response.ok) {
-          // If the delete operation was successful, update the state to reflect the change
-          setItems((prevItems) => prevItems.filter((item) => item.id !== id));
-          console.log(`${endpoint} deleted successfully`);
+          // Delete successful, fetch updated items to update UI
+          fetchUpdatedItems(endpoint);
+          console.log(`Item with ID ${id} in ${endpoint} deleted successfully`);
         } else {
-          console.error(`Error deleting ${endpoint}`, response);
-          // Handle error (e.g., display an error message to the user)
+          console.error(`Error deleting item with ID ${id} in ${endpoint}`);
         }
-      } catch (error) {
-        console.error(`Error deleting ${endpoint}`, error);
-        // Handle error (e.g., display an error message to the user)
+      } catch (error:any) {
+        console.error(`Error deleting item with ID ${id} in ${endpoint}:`, error.message);
+      }
+    };
+
+    const fetchUpdatedItems = async (endpoint: string) => {
+      try {
+        const response = await fetch(`api/${endpoint}/${department_id}`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch updated ${endpoint}`);
+        }
+        const data = await response.json();
+        switch (endpoint) {
+          case 'strengths':
+            setFetchedStrengths(data);
+            break;
+          case 'weaknesses':
+            setFetchedWeaknesses(data);
+            break;
+          case 'opportunities':
+            setFetchedOpportunities(data);
+            break;
+          case 'threats':
+            setFetchedThreats(data);
+            break;
+          default:
+            console.error(`Invalid endpoint: ${endpoint}`);
+        }
+      } catch (error:any) {
+        console.error(`Error fetching updated ${endpoint}:`, error.message);
       }
     };
 
     const deleteStrength = async (id: string, department_id: string) => {
-      await deleteItem(id, department_id, 'strengths');
-    };
-  
-    const deleteWeakness = async (id: string, department_id: string) => {
-      await deleteItem(id, department_id, 'weakness');
-    };
+  await deleteItem(id, department_id, 'strengths');
+};
 
-     const deleteOpportunities = async (id: string, department_id: string) => {
-      await deleteItem(id, department_id, 'opportunities');
-    };
-    
-    const deleteThreats = async (id: string, department_id: string) => {
-      await deleteItem(id, department_id, 'threats');
-    };
-   
+const deleteWeakness = async (id: string, department_id: string) => {
+  await deleteItem(id, department_id, 'weaknesses');
+};
+
+const deleteOpportunities = async (id: string, department_id: string) => {
+  await deleteItem(id, department_id, 'opportunities');
+};
+
+const deleteThreats = async (id: string, department_id: string) => {
+  await deleteItem(id, department_id, 'threats');
+};
     return { items, newItem, isAdding, handleAddClick,handleChange, addStrength, EditStrength, deleteStrength, addWeakness, EditWeakness, deleteWeakness, addOpportunities, EditOpportunities, deleteOpportunities, addThreats, EditThreats, deleteThreats};
   };
 
@@ -246,9 +738,8 @@ const Swot = () => {
           throw new Error('Failed to fetch strengths');
         }
         const data = await response.json();
-        console.log('Fetched strengths data:', data); // Log the fetched data
-        setFetchedStrengths(data); // Store fetched strengths in state
-        setLastFetchedDepartmentId(department_id); // Store the department_id associated with the fetched strengths
+        setFetchedStrengths(data); 
+        setLastFetchedDepartmentId(department_id); 
       } catch (error: any) {
         console.error('Error fetching strengths:', error.message);
       }
@@ -264,16 +755,15 @@ const Swot = () => {
   useEffect(() => {
     const FetchWeaknesses = async () => {
       try {
-        const response = await fetch(`api/weakness/${department_id}`);
+        const response = await fetch(`api/weaknesses/${department_id}`);
         if (!response.ok) {
-          throw new Error('Failed to fetch weakness');
+          throw new Error('Failed to fetch weaknesses');
         }
         const data = await response.json();
-        console.log('Fetched weakness data:', data); 
         setFetchedWeaknesses(data); 
         setLastFetchedDepartmentId(department_id); 
       } catch (error: any) {
-        console.error('Error fetching weakness:', error.message);
+        console.error('Error fetching weaknesses:', error.message);
       }
     };
   
@@ -291,7 +781,6 @@ const Swot = () => {
           throw new Error('Failed to fetch opportunities');
         }
         const data = await response.json();
-        console.log('Fetched opportunities data:', data); 
         setFetchedOpportunities(data); 
         setLastFetchedDepartmentId(department_id); 
       } catch (error: any) {
@@ -312,7 +801,6 @@ const Swot = () => {
           throw new Error('Failed to fetch threats');
         }
         const data = await response.json();
-        console.log('Fetched threats data:', data); 
         setFetchedThreats(data); 
         setLastFetchedDepartmentId(department_id); 
       } catch (error: any) {
@@ -325,45 +813,85 @@ const Swot = () => {
     }
   }, [department_id, lastFetchedDepartmentId, fetchedThreats.length]);
 
-
-  const fetchUpdatedData = async (category: string) => {
+  const fetchUpdatedStrengths = async () => {
     try {
-      const response = await fetch(`api/${category}/${department_id}`);
+      const response = await fetch(`api/strengths/${department_id}`);
       if (!response.ok) {
-        throw new Error(`Failed to fetch updated ${category}`);
+        throw new Error('Failed to fetch updated strengths');
       }
       const data = await response.json();
-      switch (category) {
-        case 'strengths':
-          setFetchedStrengths(data);
-          break;
-        case 'weakness':
-          setFetchedWeaknesses(data);
-          break;
-        case 'opportunities':
-          setFetchedOpportunities(data);
-          break;
-        case 'threats':
-          setFetchedThreats(data);
-          break;
-        default:
-          break;
-      }
+      setFetchedStrengths(data); // Update fetched strengths with the new data
     } catch (error: any) {
-      console.error(`Error fetching updated ${category}:`, error.message);
+      console.error('Error fetching updated strengths:', error.message);
+    }
+  };
+
+  const fetchUpdatedWeaknesses = async () => {
+    try {
+      const response = await fetch(`api/weaknesses/${department_id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch updated weaknesses');
+      }
+      const data = await response.json();
+      setFetchedWeaknesses(data); // Update fetched strengths with the new data
+    } catch (error: any) {
+      console.error('Error fetching updated weaknesses:', error.message);
     }
   };
   
+  const fetchUpdatedOpportunities = async () => {
+    try {
+      const response = await fetch(`api/opportunities/${department_id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch updated opportunities');
+      }
+      const data = await response.json();
+      setFetchedOpportunities(data); // Update fetched opportunities with the new data
+    } catch (error: any) {
+      console.error('Error fetching updated opportunities:', error.message);
+    }
+  };
+  
+  const fetchUpdatedThreats = async () => {
+    try {
+      const response = await fetch(`api/threats/${department_id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch updated threats');
+      }
+      const data = await response.json();
+      setFetchedThreats(data); // Update fetched threats with the new data
+    } catch (error: any) {
+      console.error('Error fetching updated threats:', error.message);
+    }
+  };
+  
+
   const strengths = useSwot(fetchedStrengths);
   const weaknesses = useSwot(fetchedWeaknesses);
   const opportunities = useSwot(fetchedOpportunities);
   const threats = useSwot(fetchedThreats);
 
-  const [showOptions, setShowOptions] = useState(null);
+const [showStrengthOptions, setShowStrengthOptions] = useState(null);
+const [showWeaknessOptions, setShowWeaknessOptions] = useState(null);
+const [showOpportunityOptions, setShowOpportunityOptions] = useState(null);
+const [showThreatOptions, setShowThreatOptions] = useState(null);
 
-  const toggleOptions = (id: any) => {
-    setShowOptions(showOptions === id ? null : id);
-  };
+const toggleStrengthOptions = (id: any) => {
+  setShowStrengthOptions(showStrengthOptions === id ? null : id);
+};
+
+const toggleWeaknessOptions = (id: any) => {
+  setShowWeaknessOptions(showWeaknessOptions === id ? null : id);
+};
+
+const toggleOpportunityOptions = (id: any) => {
+  setShowOpportunityOptions(showOpportunityOptions === id ? null : id);
+};
+
+const toggleThreatOptions = (id: any) => {
+  setShowThreatOptions(showThreatOptions === id ? null : id);
+};
+
   return (
     <div className="flex flex-row w-full h-screen bg-[#eeeeee]">
     <Navbar />
@@ -444,7 +972,7 @@ const Swot = () => {
                         >
                           <div className="flex flex-row text-[1.3rem] overflow-y-auto">
                             <div className="bg-[rgba(239,175,33,0.5)] pt-1 pb-1 pr-2 pl-2 font-semibold text-[#962203]">
-                              {strength.id}:
+                            {"S"+strength.id}:
                             </div>
                             <div className=" pt-1 pb-1 pr-2 pl-2 break-words overflow-y-auto">
                               {strength.value}
@@ -458,7 +986,7 @@ const Swot = () => {
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
-                              onClick={() => toggleOptions(strength.id)}
+                              onClick={() => toggleStrengthOptions(strength.id)}
                             >
                               <path
                                 strokeLinecap="round"
@@ -468,10 +996,11 @@ const Swot = () => {
                               />
                             </svg>
 
-                            {showOptions === strength.id && (
+                            {showStrengthOptions === strength.id && (
                               <div className="flex flex-col">
                                 <div className="absolute mt-2 w-20 bg-white rounded-md overflow-hidden shadow-lg">
                                 <button
+                                //kani modal
                                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-red-500 w-full text-left"
                                   onClick={() => {
                                     const newValue = prompt("Enter new value:", strength.value);
@@ -483,6 +1012,8 @@ const Swot = () => {
                                   Edit
                                 </button>
                                 <button 
+
+                              //kani modal
                                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-red-500 w-full text-left" 
                                   onClick={() => strengths.deleteStrength(strength.id, department_id)} 
                                 >
@@ -535,7 +1066,7 @@ const Swot = () => {
                         >
                           <div className="flex flex-row text-[1.3rem] overflow-y-auto">
                             <div className="bg-[rgba(239,175,33,0.5)] pt-1 pb-1 pr-2 pl-2 font-semibold text-[#962203]">
-                              {weakness.id}:
+                              {"W"+weakness.id}:
                             </div>
                             <div className=" pt-1 pb-1 pr-2 pl-2 break-words overflow-y-auto">
                               {weakness.value}
@@ -549,6 +1080,7 @@ const Swot = () => {
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
+                              onClick={() => toggleWeaknessOptions(weakness.id)}
                             >
                               <path
                                 strokeLinecap="round"
@@ -557,12 +1089,13 @@ const Swot = () => {
                                 d="M4 6h16M4 12h16M4 18h16"
                               />
                             </svg>
-                            {showOptions === weakness.id && (
+                            {showWeaknessOptions  === weakness.id && (
                               <div className="flex flex-col">
                                 <div className="absolute mt-2 w-20 bg-white rounded-md overflow-hidden shadow-lg">
                                 <button
                                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-red-500 w-full text-left"
                                   onClick={() => {
+                                    //kani modal
                                     const newValue = prompt("Enter new value:", weakness.value);
                                     if (newValue !== null) {
                                       weaknesses.EditWeakness(weakness.id, newValue, department_id); 
@@ -572,6 +1105,7 @@ const Swot = () => {
                                   Edit
                                 </button>
                                 <button 
+                                //kani modal
                                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-red-500 w-full text-left" 
                                   onClick={() => weaknesses.deleteWeakness(weakness.id,department_id )} 
                                 >
@@ -621,7 +1155,7 @@ const Swot = () => {
                         >
                           <div className="flex flex-row text-[1.3rem] overflow-y-auto">
                             <div className="bg-[rgba(239,175,33,0.5)] pt-1 pb-1 pr-2 pl-2 font-semibold text-[#962203]">
-                              {opportunity.id}:
+                              {"O"+opportunity.id}:
                             </div>
                             <div className=" pt-1 pb-1 pr-2 pl-2 break-words overflow-y-auto">
                               {opportunity.value}
@@ -635,6 +1169,7 @@ const Swot = () => {
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
+                              onClick={() => toggleOpportunityOptions(opportunity.id)}
                             >
                               <path
                                 strokeLinecap="round"
@@ -643,12 +1178,13 @@ const Swot = () => {
                                 d="M4 6h16M4 12h16M4 18h16"
                               />
                             </svg>
-                            {showOptions === opportunity.id && (
+                            {showOpportunityOptions=== opportunity.id && (
                               <div className="flex flex-col">
                                 <div className="absolute mt-2 w-20 bg-white rounded-md overflow-hidden shadow-lg">
                                 <button
                                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-red-500 w-full text-left"
                                   onClick={() => {
+                                    //kani MODAL
                                     const newValue = prompt("Enter new value:", opportunity.value);
                                     if (newValue !== null) {
                                       opportunities.EditOpportunities(opportunity.id, newValue, department_id); 
@@ -658,6 +1194,7 @@ const Swot = () => {
                                   Edit
                                 </button>
                                 <button 
+                                //KANI MODAL
                                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-red-500 w-full text-left" 
                                   onClick={() => opportunities.deleteOpportunities(opportunity.id, department_id)} 
                                 >
@@ -673,7 +1210,6 @@ const Swot = () => {
                   </div>
                 </Card> 
 
-                {/* Threats Card (similar structure to Strengths Card) */}
                 <Card className=" flex align-center shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-xl border  border-[0.1rem_solid_#807C7C] justify-between py-5 px-2 bg-white w-[23rem] h-[30rem]">
                   <div className="flex flex-col">
                     <div className="flex flex-row rounded-xl bg-[#962203] w-[21.8rem] h-10 items-center p-1 justify-between">
@@ -685,12 +1221,10 @@ const Swot = () => {
                         onClick={threats.handleAddClick}
                       />
                     </div>
+
                     <div className="relative">
                       {threats.isAdding && (
-                        <TextField
-                          autoFocus
-                          fullWidth
-                          variant="standard"
+                        <input
                           placeholder="Type strength and press Enter"
                           value={threats.newItem}
                           onChange={threats.handleChange}
@@ -703,6 +1237,7 @@ const Swot = () => {
                         />
                       )}
                     </div>
+
                     <div className=" flex flex-col overflow-auto ">
                       {fetchedThreats.map((threat) => (
                         <div
@@ -711,12 +1246,14 @@ const Swot = () => {
                         >
                           <div className="flex flex-row text-[1.3rem] overflow-y-auto">
                             <div className="bg-[rgba(239,175,33,0.5)] pt-1 pb-1 pr-2 pl-2 font-semibold text-[#962203]">
-                              {threat.id}:
+                              {"T"+threat.id}:
                             </div>
                             <div className=" pt-1 pb-1 pr-2 pl-2 break-words overflow-y-auto">
                               {threat.value}
                             </div>
                           </div>
+
+
 
                           <div className="flex">
                             <svg
@@ -725,6 +1262,7 @@ const Swot = () => {
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="currentColor"
+                              onClick={() => toggleThreatOptions(threat.id)}
                             >
                               <path
                                 strokeLinecap="round"
@@ -733,23 +1271,25 @@ const Swot = () => {
                                 d="M4 6h16M4 12h16M4 18h16"
                               />
                             </svg>
-                            {showOptions === threat.id && (
+                            {showThreatOptions=== threat.id && (
                               <div className="flex flex-col">
                                 <div className="absolute mt-2 w-20 bg-white rounded-md overflow-hidden shadow-lg">
                                 <button
+                                //KANI MODAL
                                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-red-500 w-full text-left"
                                   onClick={() => {
                                     const newValue = prompt("Enter new value:", threat.value);
                                     if (newValue !== null) {
-                                      threats.EditThreats(threat.id, newValue, department_id); 
+                                      threats.EditThreats(threat.id, newValue,department_id); 
                                     }
                                   }}
                                 >
                                   Edit
                                 </button>
                                 <button 
+                                //KANI MODAL
                                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-red-500 w-full text-left" 
-                                  onClick={() => threats.deleteThreats(threat.id, department_id)} 
+                                  onClick={() => threats.deleteThreats(threat.id,department_id)} 
                                 >
                                   Delete 
                                 </button> 
@@ -780,7 +1320,7 @@ const Swot = () => {
             // STRATEGIES CONTAINER (similar structure to SWOT CONTAINER)
             <div className="flex flex-col">
               <div className="flex flex-row gap-[5rem]">
-                <Card className="flex align-center mb-6 shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-xl border  border-[0.1rem_solid_#807C7C] justify-between bg-white w-[45rem] h-[14rem]">
+                <Card className="flex align-center mb-6 shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-xl border  border-[0.1rem_solid_#807C7C] justify-between bg-white w-[45rem] h-[30rem]">
                   <div className="flex flex-col">
                     <div className="flex flex-row mt-4 mx-3 p-2 rounded-[0.6rem] bg-[#962203] w-[43.3rem] h-10 justify-between items-center">
                       <span className="ml-2 relative font-semibold text-[1.3rem] text-[#FFFFFF]">
@@ -795,7 +1335,7 @@ const Swot = () => {
                     </div>
                   </div>
                 </Card>
-                <Card className="flex align-center mb-6 shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-xl border  border-[0.1rem_solid_#807C7C] justify-between bg-white w-[45rem] h-[14rem]">
+                <Card className="flex align-center mb-6 shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-xl border  border-[0.1rem_solid_#807C7C] justify-between bg-white w-[45rem] h-[30rem]">
                   <div className="flex flex-col">
                     <div className="flex flex-row mt-4 mx-3 p-2 rounded-[0.6rem] bg-[#962203] w-[43.3rem] h-10 justify-between items-center">
                       <span className="ml-2 relative font-semibold text-[1.3rem] text-[#FFFFFF]">
@@ -812,7 +1352,7 @@ const Swot = () => {
                 </Card>
               </div>
               <div className="flex flex-row gap-[5rem]">
-                <Card className="flex align-center mb-6 shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-xl border  border-[0.1rem_solid_#807C7C] justify-between bg-white w-[45rem] h-[14rem]">
+                <Card className="flex align-center mb-6 shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-xl border  border-[0.1rem_solid_#807C7C] justify-between bg-white w-[45rem] h-[30rem]">
                   <div className="flex flex-col">
                     <div className="flex flex-row mt-4 mx-3 p-2 rounded-[0.6rem] bg-[#962203] w-[43.3rem] h-10 justify-between items-center">
                       <span className="ml-2 relative font-semibold text-[1.3rem] text-[#FFFFFF]">
@@ -827,7 +1367,7 @@ const Swot = () => {
                     </div>
                   </div>
                 </Card>
-                <Card className="flex align-center mb-6 shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-xl border  border-[0.1rem_solid_#807C7C] justify-between bg-white w-[45rem] h-[14rem]">
+                <Card className="flex align-center mb-6 shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-xl border  border-[0.1rem_solid_#807C7C] justify-between bg-white w-[45rem] h-[30rem]">
                   <div className="flex flex-col">
                     <div className="flex flex-row mt-4 mx-3 p-2 rounded-[0.6rem] bg-[#962203] w-[43.3rem] h-10 justify-between items-center">
                       <span className="ml-2 relative font-semibold text-[1.3rem] text-[#FFFFFF]">

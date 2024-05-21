@@ -1,26 +1,18 @@
 import { NextResponse } from "next/server";
-import Goals from '/models/goals.js';
-
+import Goals from "/models/goals.js";
 
 export async function GET(req, { params }) {
   try {
     const { department_id } = params;
     console.log(" ID:", department_id);
 
-    // Fetch department details from the database
-    const department = await Goals.getGoalsByDepartmentId(department_id);
+    // Fetch the most recent department details from the database
+    const department = await Goals.getLatestGoalsByDepartmentId(department_id);
 
     if (department) {
       // Department found, return the department details
-      const {
-        vision,
-        proposition,
-        goals,
-        goals2,
-        goals3,
-        startDate,
-        endDate,
-      } = department;
+      const { vision, proposition, goals, goals2, goals3, startDate, endDate } =
+        department;
 
       return NextResponse.json({
         vision,
@@ -47,5 +39,3 @@ export async function GET(req, { params }) {
     );
   }
 }
-  
-  

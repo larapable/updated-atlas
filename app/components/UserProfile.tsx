@@ -3,99 +3,152 @@ import { useState, useEffect } from "react";
 import { getSession, useSession } from "next-auth/react";
 import EditProfile from "../profile/edit/page";
 import Email from "next-auth/providers/email";
-import Link from "next/link"
+import Link from "next/link";
 
 export default function UserProfile() {
+  const { data: session, status, update } = useSession();
+  console.log("useSession Hook session object", session);
 
-
-  const {data: session,status, update } = useSession();
-  console.log("useSession Hook session object", session)
-  
   let user;
-  if(session?.user?.name) 
-    user = JSON.parse(session?.user?.name as string);
+  if (session?.user?.name) user = JSON.parse(session?.user?.name as string);
 
-  const [imageUrl, setImageUrl] = useState("");
- 
+  const [image, setImage] = useState("");
+
   const [department, setDepartment] = useState("");
   const [headOfficer, setHeadOfficer] = useState("");
   const [departmentLandline, setDepartmentLandline] = useState("");
   const [location, setLocation] = useState("");
   const [university, setUniversity] = useState("");
-  const [departmentDescription, setDepartmentDescription] = useState("---Description---");
+  const [departmentDescription, setDepartmentDescription] =
+    useState("---Description---");
   const [officeVision, setOfficeVision] = useState("---Set Office Vision---");
-  const [valueProposition, setValueProposition] = useState("---Set Value Proposition---");
-  const [strategicGoals, setStrategicGoals] = useState("---Set Strategic Goals1---");
-  const [strategicGoals2, setStrategicGoals2] = useState("---Set Strategic Goals2---");
-  const [strategicGoals3, setStrategicGoals3] = useState("---Set Strategic Goals3---");
+  const [valueProposition, setValueProposition] = useState(
+    "---Set Value Proposition---"
+  );
+  const [strategicGoals, setStrategicGoals] = useState(
+    "---Set Strategic Goals1---"
+  );
+  const [strategicGoals2, setStrategicGoals2] = useState(
+    "---Set Strategic Goals2---"
+  );
+  const [strategicGoals3, setStrategicGoals3] = useState(
+    "---Set Strategic Goals3---"
+  );
 
-    const department_id= user?.department_id;
-    console.log("User Parsed: ", user);
-    const username = user?.username;
-    const email = user?.email;
+  const department_id = user?.department_id;
+  console.log("User Parsed: ", user);
+  const username = user?.username;
+  const email = user?.email;
 
-    useEffect(() => {
-      const fetchUserProfileData = async () => {
-        try {
-          const response = await fetch(`../api/profile/${department_id}`);
-          if (response.ok) {
-            const data = await response.json();
-            console.log("Received data:", data); // Add this line to log the received data
-            setDepartment(data.department_name);
-            setHeadOfficer(data.headOfficer);
-            setDepartmentLandline(data.departmentLandline);
-            setLocation(data.location);
-            setUniversity(data.university);
-            setDepartmentDescription(data.description);
-          } else {
-            console.error('Error fetching user profile data:', response.statusText);
-          }
-        } catch (error) {
-          console.error('Error fetching user profile data:', error);
+  useEffect(() => {
+    const fetchUserProfileData = async () => {
+      try {
+        const response = await fetch(`../api/profile/${department_id}`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Received data:", data); // Add this line to log the received data
+          setDepartment(data.department_name);
+          setHeadOfficer(data.headOfficer);
+          setDepartmentLandline(data.departmentLandline);
+          setLocation(data.location);
+          setUniversity(data.university);
+          setDepartmentDescription(data.description);
+        } else {
+          console.error(
+            "Error fetching user profile data:",
+            response.statusText
+          );
         }
-      };
-      fetchUserProfileData();
-    }, [department_id]);
+      } catch (error) {
+        console.error("Error fetching user profile data:", error);
+      }
+    };
+    fetchUserProfileData();
+  }, [department_id]);
 
-
-    useEffect(() => {
-      const fetchProfileGoals = async () => {
-        try {
-          const response = await fetch(`../api/checkGoals/${department_id}`);
-          if (response.ok) {
-            const data = await response.json();
-            console.log("Received data:", data); // Add this line to log the received data
-            setOfficeVision(data.vision);
-            setValueProposition(data.proposition);
-            setStrategicGoals(data.goals)
-            setStrategicGoals2(data.goals2)
-            setStrategicGoals3(data.goals3)
-            
-          } else {
-            console.error('Error fetching user profile data:', response.statusText);
-          }
-        } catch (error) {
-          console.error('Error fetching user profile data:', error);
+  useEffect(() => {
+    const fetchProfileGoals = async () => {
+      try {
+        const response = await fetch(`../api/checkGoals/${department_id}`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Received data:", data); // Add this line to log the received data
+          setOfficeVision(data.vision);
+          setValueProposition(data.proposition);
+          setStrategicGoals(data.goals);
+          setStrategicGoals2(data.goals2);
+          setStrategicGoals3(data.goals3);
+        } else {
+          console.error(
+            "Error fetching user profile data:",
+            response.statusText
+          );
         }
-      };
-      fetchProfileGoals();
-    }, [department_id]);
+      } catch (error) {
+        console.error("Error fetching user profile data:", error);
+      }
+    };
+    fetchProfileGoals();
+  }, [department_id]);
+  
+  useEffect(() => {
+    const fetchImageData = async () => {
+      try {
+        const response = await fetch(`../api/getImage/${department_id}`);
+        if (response.ok) {
+          const { imageData, imageFormat } = await response.json();
+          console.log(
+            "Received image data:",
+            imageData,
+            "Image format:",
+            imageFormat
+          );
 
+          // Check that imageData and imageFormat are correct
+          if (!imageData || !imageFormat) {
+            console.error(
+              "Invalid image data or format:",
+              imageData,
+              imageFormat
+            );
+            return;
+          }
+
+          // Create a data URL for the image
+          const image = `data:image/${imageFormat};base64,${imageData}`;
+
+          // Set the image URL
+          setImage(image);
+
+          // Log the image URL
+          console.log("Image URL:", image);
+        } else {
+          console.error("Error fetching image data:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error fetching image data:", error);
+      }
+    };
+    fetchImageData();
+  }, [department_id]);
 
   return (
     <div className="flex flex-row">
       <Card className="w-[25rem] h-[53rem] flex flex-col items-center justify-center rounded-xl">
-          {/* Conditionally render the image or the profile icon */}
-          {imageUrl ? (
-            <>
-              <img
-                src={imageUrl}
-                alt="Department Image"
-                className="w-full h-72 my-4 py-4 object-cover mt-[-6rem]"
-              />
-            </>
-          ) : (
-            <div className="border-[0.1rem] border-solid shadow-lg border-black border-opacity-60  w-48 h-48 my-4 py-4 flex items-center"> 
+        {/* Conditionally render the image or the profile icon */}
+        {image ? (
+          <div className="border-[0.1rem] border-solid shadow-lg border-black border-opacity-60  w-48 h-48 my-4 flex items-center ">
+            <img
+              src={image}
+              alt="Department Image"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                console.error("Error loading image:", e);
+              }}
+            />
+          </div>
+        ) : (
+          <div className="border-[0.1rem] border-solid shadow-lg border-black border-opacity-60  w-48 h-48 my-4 py-4 flex items-center">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -108,16 +161,16 @@ export default function UserProfile() {
                 clipRule="evenodd"
               />
             </svg>
-            </div>
-          )}
+          </div>
+        )}
         <span className="text-lg font-normal">Department</span>
         <div className="text-4xl font-bold text-center">{department}</div>
         <div className="flex flex-col w-[21rem] h-80 mt-10 mb-10 bg-[#ffffff] ">
-        <div className=" flex flex-row items-center justify-center w-fit mx-8">
+          <div className=" flex flex-row items-center justify-center w-fit mx-8">
             <div className="flex items-center">
-            <svg
+              <svg
                 xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24" 
+                viewBox="0 0 24 24"
                 fill="currentColor"
                 className="w-8 h-8"
               >
@@ -154,7 +207,7 @@ export default function UserProfile() {
             <div className="flex items-center">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24" 
+                viewBox="0 0 24 24"
                 fill="currentColor"
                 className="w-8 h-8"
               >
@@ -237,26 +290,31 @@ export default function UserProfile() {
             </div>
           </div>
         </div>
-        <Button href="/profile/edit" className="shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-[0.6rem] bg-[#FAD655] text-[#8A252C] break-words font-semibold text-lg relative flex pr-3 pl-6 pb-2 w-40 h-[fit-content] mx-10 mb-5 hover:bg-[#8a252c] hover:text-[#ffffff]">
+        <Button
+          href="/profile/edit"
+          className="shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-[0.6rem] bg-[#FAD655] text-[#8A252C] break-words font-semibold text-lg relative flex pr-3 pl-6 pb-2 w-40 h-[fit-content] mx-10 mb-5 hover:bg-[#8a252c] hover:text-[#ffffff]"
+        >
           Edit
         </Button>
       </Card>
       {/* ABOUT DEPARTMENT */}
       <div className="flex flex-col gap-6">
-      <Card className="w-[78rem] h-64 flex flex-col rounded-xl ml-10 mr-10 pb-3">
-        <div className="flex flex-row self-start gap-[45rem]">
-        <div className="text-2xl font-bold text-center self-start mx-10 mt-10 mb-5 text-[#5c5b5b]">
-          About Department
-        </div>
-        </div>
-        <div className="bg-[#CBC3C3] left-[0rem] top-[2.3rem] right-[0rem] h-[0.1rem]">
-        </div>
-        <div className=" text-xl mx-12 h-32 mt-5 font-semibold overflow-y-auto">{departmentDescription}</div>
-      </Card>
-      <Card className="w-[78rem] h-40 flex flex-col rounded-xl ml-10 mr-10 pb-3">
-          <span className="text-2xl font-bold mx-10 mt-3 mb-3 text-[#5c5b5b]">Office Vision</span>
-          <div className="bg-[#CBC3C3] left-[0rem] top-[2.3rem] right-[0rem] h-[0.1rem]">
+        <Card className="w-[78rem] h-64 flex flex-col rounded-xl ml-10 mr-10 pb-3">
+          <div className="flex flex-row self-start gap-[45rem]">
+            <div className="text-2xl font-bold text-center self-start mx-10 mt-10 mb-5 text-[#5c5b5b]">
+              About Department
+            </div>
           </div>
+          <div className="bg-[#CBC3C3] left-[0rem] top-[2.3rem] right-[0rem] h-[0.1rem]"></div>
+          <div className=" text-xl mx-12 h-32 mt-5 font-semibold overflow-y-auto">
+            {departmentDescription}
+          </div>
+        </Card>
+        <Card className="w-[78rem] h-40 flex flex-col rounded-xl ml-10 mr-10 pb-3">
+          <span className="text-2xl font-bold mx-10 mt-3 mb-3 text-[#5c5b5b]">
+            Office Vision
+          </span>
+          <div className="bg-[#CBC3C3] left-[0rem] top-[2.3rem] right-[0rem] h-[0.1rem]"></div>
           <div className="mx-10 overflow-auto">
             <div className="text-lg font-normal mx-5 mb-2 flex flex-row">
               <div className="whitespace-normal break-words pt-3 font-medium">
@@ -264,13 +322,12 @@ export default function UserProfile() {
               </div>
             </div>
           </div>
-      </Card>
-      <Card className="w-[78rem] h-40 flex flex-col rounded-xl ml-10 mr-10 pb-3">
+        </Card>
+        <Card className="w-[78rem] h-40 flex flex-col rounded-xl ml-10 mr-10 pb-3">
           <span className="text-2xl font-bold mx-10 mt-3 mb-3 text-[#5c5b5b]">
             Value Proposition
           </span>
-          <div className="bg-[#CBC3C3] left-[0rem] top-[2.3rem] right-[0rem] h-[0.1rem]">
-          </div>
+          <div className="bg-[#CBC3C3] left-[0rem] top-[2.3rem] right-[0rem] h-[0.1rem]"></div>
           <div className="mx-10 overflow-auto">
             <div className="text-lg font-normal mx-5 mb-2 flex flex-row">
               <div className="whitespace-normal break-words pt-3 font-medium">
@@ -278,32 +335,39 @@ export default function UserProfile() {
               </div>
             </div>
           </div>
-      </Card>
-      <Card className="w-[78rem] h-[13rem] flex flex-col rounded-xl ml-10 mr-10 pb-3">
-          <span className="text-2xl font-bold mx-10 mt-3 mb-3 text-[#5c5b5b]">Strategic Goals</span>
-          <div className="bg-[#CBC3C3] left-[0rem] top-[2.3rem] right-[0rem] h-[0.1rem]">
-          </div>
+        </Card>
+        <Card className="w-[78rem] h-[13rem] flex flex-col rounded-xl ml-10 mr-10 pb-3">
+          <span className="text-2xl font-bold mx-10 mt-3 mb-3 text-[#5c5b5b]">
+            Strategic Goals
+          </span>
+          <div className="bg-[#CBC3C3] left-[0rem] top-[2.3rem] right-[0rem] h-[0.1rem]"></div>
           <div className="mx-10 overflow-auto">
             <div className="text-lg font-normal mx-5 mb-2 flex flex-row">
               <div className="whitespace-normal break-words pt-3 font-medium">
-              <span className="rounded-full bg-yellow-400 text-white font-bold px-2 py-1 mr-2">1</span>
+                <span className="rounded-full bg-yellow-400 text-white font-bold px-2 py-1 mr-2">
+                  1
+                </span>
                 {strategicGoals}
               </div>
             </div>
             <div className="text-lg font-normal mx-5 mb-2 flex flex-row">
               <div className="whitespace-normal break-words pt-3 font-medium">
-              <span className="rounded-full bg-red-500 text-white font-bold px-2 py-1 mr-2">2</span>
+                <span className="rounded-full bg-red-500 text-white font-bold px-2 py-1 mr-2">
+                  2
+                </span>
                 {strategicGoals2}
               </div>
             </div>
             <div className="text-lg font-normal mx-5 mb-2 flex flex-row">
               <div className="whitespace-normal break-words pt-3 font-medium">
-              <span className="rounded-full bg-orange-500 text-white font-bold px-2 py-1 mr-2">3</span>
+                <span className="rounded-full bg-orange-500 text-white font-bold px-2 py-1 mr-2">
+                  3
+                </span>
                 {strategicGoals3}
               </div>
             </div>
           </div>
-      </Card>
+        </Card>
       </div>
     </div>
   );

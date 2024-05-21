@@ -15,9 +15,10 @@ export async function POST(req) {
 export async function PUT(req) {
     try {
         const { id, newValue, department_id } = await req.json();
-
-        await Swot.editStrength(id, newValue, department_id);
-        return NextResponse.json({ message: "Weakness updated successfully." }, { status: 200 });
+        const updatedwks = await Swot.editWeakness(id, newValue, department_id);
+        console.log("Results:", updatedwks);
+        console.log("ResultsWithID:", updatedwks.updatedWeakness.id);
+        return NextResponse.json({ message: "Weakness updated successfully.", updatedwks }, { status: 200 });
     } catch (error) {
         return NextResponse.json({ message: "An error occurred in updating weakness." }, { status: 500 });
     }
@@ -26,7 +27,7 @@ export async function PUT(req) {
 export async function DELETE(req) {
     try {
         const { id, department_id } = await req.json();
-        await Swot.deleteStrength(id, department_id);
+        await Swot.deleteWeakness(id, department_id);
         return NextResponse.json({ message: "Weakness deleted successfully." }, { status: 200 });
     } catch (error) {
         return NextResponse.json({ message: "An error occurred in deleting weakness." }, { status: 500 });

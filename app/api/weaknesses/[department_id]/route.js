@@ -8,11 +8,11 @@ export async function GET(req, { params }) {
     console.log("GET:", department_id);
 
    
-    const { success, weakness, message } = await Swot.getWeaknessByDepartmentId(department_id);
+    const { success, weaknesses, message } = await Swot.getWeaknessByDepartmentId(department_id);
 
     if (success) {
 
-      return NextResponse.json(weakness);
+      return NextResponse.json(weaknesses);
     } else {
 
       return NextResponse.error(new Error(message));

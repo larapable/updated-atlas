@@ -1,17 +1,15 @@
 import { Button, Card, Modal } from "@mui/material";
-import { useState} from "react";
+import { useState } from "react";
 import { useEffect } from "react";
 import { getSession, useSession } from "next-auth/react";
 
 export default function UserEditProfile() {
-
-  const {data: session,status, update } = useSession();
+  const { data: session, status, update } = useSession();
 
   let user;
-  if(session?.user?.name) 
-    user = JSON.parse(session?.user?.name as string);
+  if (session?.user?.name) user = JSON.parse(session?.user?.name as string);
 
-  const [imageUrl, setImageUrl] = useState("");
+  const [image, setImage] = useState("");
   const [headOfficer, setHeadOfficer] = useState("");
   const [departmentLandline, setDepartmentLandline] = useState("");
   const [location, setLocation] = useState("");
@@ -20,20 +18,12 @@ export default function UserEditProfile() {
   const [showModal, setShowModal] = useState(false);
   const [confirmationMessage, setConfirmationMessage] = useState("");
 
-  const [officeVision, setOfficeVision] = useState(
-    "-------- "
-  );
-  const [valueProposition, setValueProposition] = useState(
-    "--------"
-  );
-  const [strategicGoals, setStrategicGoals] = useState(
-    "--------"
-  );
+  const [officeVision, setOfficeVision] = useState("-------- ");
+  const [valueProposition, setValueProposition] = useState("--------");
+  const [strategicGoals, setStrategicGoals] = useState("--------");
 
-  const department_id= user?.department_id;
-  console.log("Department: ",department_id);
-  const user_id = user?.id;
-  console.log("ID: ",user_id);
+  const department_id = user?.department_id;
+  console.log("Department: ", department_id);
 
   useEffect(() => {
     const fetchUserProfileData = async () => {
@@ -48,15 +38,58 @@ export default function UserEditProfile() {
           setUniversity(data.university);
           setDepartmentDescription(data.description);
         } else {
-          console.error('Error fetching user profile data:', response.statusText);
+          console.error(
+            "Error fetching user profile data:",
+            response.statusText
+          );
         }
       } catch (error) {
-        console.error('Error fetching user profile data:', error);
+        console.error("Error fetching user profile data:", error);
       }
     };
     fetchUserProfileData();
   }, [department_id]);
 
+  useEffect(() => {
+    const fetchImageData = async () => {
+      try {
+        const response = await fetch(`../api/getImage/${department_id}`);
+        if (response.ok) {
+          const { imageData, imageFormat } = await response.json();
+          console.log(
+            "Received image data:",
+            imageData,
+            "Image format:",
+            imageFormat
+          );
+
+          // Check that imageData and imageFormat are correct
+          if (!imageData || !imageFormat) {
+            console.error(
+              "Invalid image data or format:",
+              imageData,
+              imageFormat
+            );
+            return;
+          }
+
+          // Create a data URL for the image
+          const image = `data:image/${imageFormat};base64,${imageData}`;
+
+          // Set the image URL
+          setImage(image);
+
+          // Log the image URL
+          console.log("Image URL:", image);
+        } else {
+          console.error("Error fetching image data:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error fetching image data:", error);
+      }
+    };
+    fetchImageData();
+  }, [department_id]);
 
   const handleSave = async (
     e: React.MouseEvent<HTMLButtonElement, MouseEvent>
@@ -70,17 +103,19 @@ export default function UserEditProfile() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          headOfficer:headOfficer,
+          headOfficer: headOfficer,
           departmentLandline: departmentLandline,
           location: location,
           university: university,
           departmentDescription: departmentDescription,
-          departmentId: department_id
+          departmentId: department_id,
         }),
       });
 
       if (res.ok) {
         console.log("Edit successful");
+        // Route back to /profile
+        window.location.href = "/profile";
       } else {
         console.log("User profile failed.");
       }
@@ -96,32 +131,66 @@ export default function UserEditProfile() {
     setShowModal(false);
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImageUrl(reader.result as string);
+        setImage(reader.result as string);
       };
       reader.readAsDataURL(file);
+
+      // Extract the image format from the file type
+      const imageFormat = file.type.split("/")[1];
+
+      const formData = new FormData();
+      formData.append("department_id", department_id);
+      formData.append("image", file, file.name);
+      formData.append("image_format", imageFormat); // Append the image format to the form data
+
+      try {
+        // Upload the image to the server
+        const response = await fetch("../api/inputImage", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (response.ok) {
+          // Image uploaded successfully
+          const result = await response.json();
+          if (result.message === "Department image saved successfully.") {
+            console.log("Image saved successfully.");
+          } else {
+            console.error("Failed to save image:", result.message);
+          }
+        } else {
+          // Handle error response
+          console.error("Failed to upload image");
+        }
+      } catch (error) {
+        // Handle network error
+        console.error("Network error occurred", error);
+      }
     }
   };
-
 
   return (
     <div className="flex flex-row">
       <Card className="w-[25rem] h-[53rem] flex flex-col items-center justify-center rounded-xl">
-          {/* Conditionally render the image or the profile icon */}
-          {imageUrl ? (
-            <>
-              <img
-                src={imageUrl}
-                alt="Department Image"
-                className="w-full h-72 my-4 py-4 object-cover mt-[-6rem]"
-              />
-            </>
-          ) : (
-            <div className="border-[0.1rem] border-solid shadow-lg border-black border-opacity-60  w-48 h-48 my-4 py-4 flex items-center"> 
+        {/* Conditionally render the image or the profile icon */}
+        {image ? (
+          <div className="border-[0.1rem] border-solid shadow-lg border-black border-opacity-60  w-48 h-48 my-4 flex items-center ">
+            <img
+              src={image}
+              alt="Department Image"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                console.error("Error loading image:", e);
+              }}
+            />
+          </div>
+        ) : (
+          <div className="border-[0.1rem] border-solid shadow-lg border-black border-opacity-60  w-48 h-48 my-4 py-4 flex items-center">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -134,31 +203,38 @@ export default function UserEditProfile() {
                 clipRule="evenodd"
               />
             </svg>
-            </div>
-          )}
-          <label
-            htmlFor="imageUpload"
-            className="mb-2 mr-2"
+          </div>
+        )}
+        <label htmlFor="imageUpload" className="mb-2 mr-2">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth="1.5"
+            stroke="currentColor"
+            className="w-6 h-6"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="w-6 h-6">
-              <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-            </svg>
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+            />
+          </svg>
+        </label>
+        <input
+          type="file"
+          id="imageUpload"
+          accept="image/*"
+          className="hidden"
+          onChange={handleImageChange}
+        />
 
-          </label>
-          <input
-            type="file"
-            id="imageUpload"
-            accept="image/*"
-            className="hidden"
-            onChange={handleImageChange}
-          />
-       
         <span className="text-lg font-normal">Department</span>
         <div className="text-4xl font-bold text-center"></div>
         <div className="flex flex-col w-[21rem] h-80 mb-10 mr-10">
           <div className=" flex flex-row items-center justify-center w-fit mx-8">
             <div className="flex items-center">
-            <svg
+              <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
                 fill="currentColor"
@@ -180,7 +256,7 @@ export default function UserEditProfile() {
               />
             </div>
           </div>
-          
+
           <div className=" flex flex-row items-center justify-center w-fit mx-8">
             <div className="flex items-center">
               <svg
@@ -219,7 +295,9 @@ export default function UserEditProfile() {
               </svg>
             </div>
             <div className="flex flex-col">
-              <span className="text-xs font-normal mt-2 mx-2">Head Officer</span>
+              <span className="text-xs font-normal mt-2 mx-2">
+                Head Officer
+              </span>
               <input
                 type="text"
                 value={headOfficer}
@@ -310,80 +388,78 @@ export default function UserEditProfile() {
           </div>
         </div>
         <Button
-            className="shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-[0.6rem] bg-[#FAD655] text-[#8A252C] break-words font-semibold text-lg relative flex pt-2 pr-3 pl-6 pb-2 w-36 h-[fit-content] mx-10 mb-2 mt-16 hover:bg-[#8a252c] hover:text-[#ffffff]"
-            onClick={handleConfirmSave}
-            // href="/profile/[id]"
-          >
-            Save
+          className="shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-[0.6rem] bg-[#FAD655] text-[#8A252C] break-words font-semibold text-lg relative flex pt-2 pr-3 pl-6 pb-2 w-36 h-[fit-content] mx-10 mb-2 mt-16 hover:bg-[#8a252c] hover:text-[#ffffff]"
+          onClick={handleConfirmSave}
+          // href="/profile/[id]"
+        >
+          Save
         </Button>
       </Card>
       <Modal open={showModal} onClose={() => setShowModal(false)}>
-      <div className="flex flex-col items-center justify-center h-full">
-        <div className="bg-white p-8 rounded-lg shadow-md h-72 w-[40rem] text-center relative">
-          <button
-            onClick={handleCancelSave}
-            className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              className="w-6 h-6"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-          <p className="text-3xl font-bold mb-4">Save Changes?</p>
-          <p className="text-xl mb-4 mt-10">
-            {confirmationMessage
-              ? confirmationMessage
-              : "Looks like you've made changes. Do you want to save these changes?"}
-          </p>
-          <div className="flex justify-center gap-10 mt-12 mb-10">
-            <Button
+        <div className="flex flex-col items-center justify-center h-full">
+          <div className="bg-white p-8 rounded-lg shadow-md h-72 w-[40rem] text-center relative">
+            <button
               onClick={handleCancelSave}
-              className="px-4 py-2 bg-[#8A252C] text-[#ffffff] rounded-xl hover:bg-[#a8444b] font-medium hover:text-[#ffffff] focus:outline-none h-12 text-xl"
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
             >
-              No, Cancel
-            </Button>
-            <Button
-              href="/profile"
-              onClick={handleSave}
-              className="px-4 py-2 bg-[#eec160] text-[#8A252C] font-semibold rounded-xl hover:bg-[#f8d384] hover:text-[#8A252C] focus:outline-none h-12 text-xl"
-            >
-              Yes, Save
-            </Button>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                className="w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+            <p className="text-3xl font-bold mb-4">Save Changes?</p>
+            <p className="text-xl mb-4 mt-10">
+              {confirmationMessage
+                ? confirmationMessage
+                : "Looks like you've made changes. Do you want to save these changes?"}
+            </p>
+            <div className="flex justify-center gap-10 mt-12 mb-10">
+              <Button
+                onClick={handleCancelSave}
+                className="px-4 py-2 bg-[#8A252C] text-[#ffffff] rounded-xl hover:bg-[#a8444b] font-medium hover:text-[#ffffff] focus:outline-none h-12 text-xl"
+              >
+                No, Cancel
+              </Button>
+              <Button
+                onClick={handleSave}
+                className="px-4 py-2 bg-[#eec160] text-[#8A252C] font-semibold rounded-xl hover:bg-[#f8d384] hover:text-[#8A252C] focus:outline-none h-12 text-xl"
+              >
+                Yes, Save
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
-    </Modal>
-
+      </Modal>
 
       <div className="flex flex-col gap-5">
-      <Card className="w-[78rem] h-64 flex flex-col rounded-xl ml-10 mr-10">
-      <div className="flex flex-row self-start gap-[45rem]">
-      <div className="text-2xl font-bold text-center self-start mx-10 mt-10 mb-5">
-          About Department
-        </div>
-      </div>
-      <div className="bg-[#CBC3C3] left-[0rem] top-[2.3rem] right-[0rem] h-[0.1rem]">
-      </div>
-        <textarea
-          value={departmentDescription}
-          className=" font-normal text-lg w-[75rem] ml-6 mx-12 h-32 p-5 border border-gray-300 rounded px-3 py-2 mt-5 overflow-auto"
-          onChange={(e) => setDepartmentDescription(e.target.value)}
-        />
-      </Card>
-      <Card className="w-[78rem] h-40 flex flex-col rounded-xl ml-10 mr-10 pb-3">
-          <span className="text-2xl font-bold mx-10 mt-3 mb-3 text-[#5c5b5b]">Office Vision</span>
-          <div className="bg-[#CBC3C3] left-[0rem] top-[2.3rem] right-[0rem] h-[0.1rem]">
+        <Card className="w-[78rem] h-64 flex flex-col rounded-xl ml-10 mr-10">
+          <div className="flex flex-row self-start gap-[45rem]">
+            <div className="text-2xl font-bold text-center self-start mx-10 mt-10 mb-5">
+              About Department
+            </div>
           </div>
+          <div className="bg-[#CBC3C3] left-[0rem] top-[2.3rem] right-[0rem] h-[0.1rem]"></div>
+          <textarea
+            value={departmentDescription}
+            className=" font-normal text-lg w-[75rem] ml-6 mx-12 h-32 p-5 border border-gray-300 rounded px-3 py-2 mt-5 overflow-auto"
+            onChange={(e) => setDepartmentDescription(e.target.value)}
+          />
+        </Card>
+        <Card className="w-[78rem] h-40 flex flex-col rounded-xl ml-10 mr-10 pb-3">
+          <span className="text-2xl font-bold mx-10 mt-3 mb-3 text-[#5c5b5b]">
+            Office Vision
+          </span>
+          <div className="bg-[#CBC3C3] left-[0rem] top-[2.3rem] right-[0rem] h-[0.1rem]"></div>
           <div className="mx-10 overflow-auto">
             <div className="text-lg font-normal mx-5 mb-2">
               <div className="whitespace-normal break-words pt-3 font-medium">
@@ -391,13 +467,12 @@ export default function UserEditProfile() {
               </div>
             </div>
           </div>
-      </Card>
-      <Card className="w-[78rem] h-40 flex flex-col rounded-xl ml-10 mr-10 pb-3">
+        </Card>
+        <Card className="w-[78rem] h-40 flex flex-col rounded-xl ml-10 mr-10 pb-3">
           <span className="text-2xl font-bold mx-10 mt-3 mb-3 text-[#5c5b5b]">
             Value Proposition
           </span>
-          <div className="bg-[#CBC3C3] left-[0rem] top-[2.3rem] right-[0rem] h-[0.1rem]">
-          </div>
+          <div className="bg-[#CBC3C3] left-[0rem] top-[2.3rem] right-[0rem] h-[0.1rem]"></div>
           <div className="mx-10 overflow-auto">
             <div className="text-lg font-normal mx-5 mb-2">
               <div className="whitespace-normal break-words pt-3 font-medium">
@@ -405,39 +480,43 @@ export default function UserEditProfile() {
               </div>
             </div>
           </div>
-      </Card>
-      <Card className="w-[78rem] h-[13rem] flex flex-col rounded-xl ml-10 mr-10 pb-3">
-      <span className="text-2xl font-bold mx-10 mt-3 mb-3 text-[#5c5b5b]">Strategic Goals</span>
-        <div className="bg-[#CBC3C3] left-[0rem] top-[2.3rem] right-[0rem] h-[0.1rem]">
-        </div>
-        <div className="mx-10 overflow-auto">
+        </Card>
+        <Card className="w-[78rem] h-[13rem] flex flex-col rounded-xl ml-10 mr-10 pb-3">
+          <span className="text-2xl font-bold mx-10 mt-3 mb-3 text-[#5c5b5b]">
+            Strategic Goals
+          </span>
+          <div className="bg-[#CBC3C3] left-[0rem] top-[2.3rem] right-[0rem] h-[0.1rem]"></div>
+          <div className="mx-10 overflow-auto">
             <div className="text-lg font-normal mx-5 mb-2 flex flex-row">
               <div className="whitespace-normal break-words pt-3 font-medium">
-                <span className="rounded-full bg-yellow-400 text-white font-bold px-2 py-1 mr-2">1</span>
+                <span className="rounded-full bg-yellow-400 text-white font-bold px-2 py-1 mr-2">
+                  1
+                </span>
                 {/* ilisi lang niya ni */}
                 {strategicGoals}
               </div>
             </div>
             <div className="text-lg font-normal mx-5 mb-2 flex flex-row">
               <div className="whitespace-normal break-words pt-3 font-medium">
-                <span className="rounded-full bg-red-500 text-white font-bold px-2 py-1 mr-2">2</span>
+                <span className="rounded-full bg-red-500 text-white font-bold px-2 py-1 mr-2">
+                  2
+                </span>
                 {/* ilisi lang niya ni */}
                 {strategicGoals}
               </div>
             </div>
             <div className="text-lg font-normal mx-5 mb-2 flex flex-row">
               <div className="whitespace-normal break-words pt-3 font-medium">
-                <span className="rounded-full bg-orange-500 text-white font-bold px-2 py-1 mr-2">3</span>
+                <span className="rounded-full bg-orange-500 text-white font-bold px-2 py-1 mr-2">
+                  3
+                </span>
                 {/* ilisi lang niya ni */}
                 {strategicGoals}
               </div>
             </div>
-
           </div>
-      </Card>
-        
-      
-    </div>
+        </Card>
+      </div>
     </div>
   );
 }

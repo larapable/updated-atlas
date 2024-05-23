@@ -1,5 +1,5 @@
 import {NextResponse} from "next/server"
-import Swot from '/models/Swot';
+import Swot from '/models/swot.js';
 
 export async function POST(req) {
     try {

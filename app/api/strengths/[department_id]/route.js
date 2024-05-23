@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import Swot from '../models/Swot.js';
+import Swot from '../../models/Swot';
 
 
 export async function GET(req, { params }) {

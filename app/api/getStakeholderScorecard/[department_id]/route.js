@@ -4,7 +4,10 @@ import Bsc from "@/models/bsc.js";
 export async function GET(req, { params }) {
   try {
     const department_id = params;
-    console.log("Fetching financial data for department ID: ", department_id);
+    console.log(
+      "Fetching stakeholder scorecard for department ID: ",
+      department_id
+    );
 
     if (!department_id) {
       console.error("Department ID is undefined.");
@@ -14,20 +17,22 @@ export async function GET(req, { params }) {
       );
     }
 
-    const financial_entity = await Bsc.getFinancialByDepartmentId(department_id);
+    const stakeholder_bsc = await Bsc.getStakeholderBSCByDepartmentId(
+      department_id
+    );
 
-    if (!financial_entity) {
+    if (!stakeholder_bsc) {
       console.error(
-        "Financial data not found for department ID: ",
+        "Stakeholder Scorecard not found for department ID: ",
         department_id
       );
       return NextResponse.json(
-        { message: "Financial data not found." },
+        { message: "Stakeholder Scorecard not found." },
         { status: 404 }
       );
     }
-    console.log("Financial Data: ", financial_entity);
-    return NextResponse.json({ financial_entity }, { status: 200 });
+    console.log("Stakeholder Scorecard: ", stakeholder_bsc);
+    return NextResponse.json({ stakeholder_bsc }, { status: 200 });
   } catch (error) {
     console.error("Error:", error);
     return NextResponse.json(

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import Goals from '/models/goals.js';
-
+ 
 export async function POST(req) {
     try {
         const {
@@ -12,27 +12,37 @@ export async function POST(req) {
             selectedDate,
             selectedEndDate,
             department_id,
+            isNew,
         } = await req.json();
-
-        // Parse selectedDate and selectedEndDate without modification
+ 
         const startDate = new Date(selectedDate);
         const endDate = new Date(selectedEndDate);
-
-        await Goals.postGoals(
-            officeVision,
-            valueProposition,
-            strategicGoals,
-            strategicGoals2,
-            strategicGoals3,
-            startDate,
-            endDate,
-            department_id
-        );
-
-        return NextResponse.json(
-            { message: "New goals created." },
-            { status: 201 }
-        );
+ 
+        if (isNew) {
+            // Insert new goals
+            await Goals.postGoals(
+                officeVision,
+                valueProposition,
+                strategicGoals,
+                strategicGoals2,
+                strategicGoals3,
+                startDate,
+                endDate,
+                department_id
+            );
+            return NextResponse.json({ message: "New goals added." }, { status: 201 });
+        } else {
+            // Update existing goals
+            const existingData = await Goals.getLatestGoalsByDepartmentId(department_id);
+            if (existingData) {
+                const { id } = existingData; // Extract the ID from the existing data
+                await Goals.updateGoalsById(id, officeVision, valueProposition, strategicGoals, strategicGoals2, strategicGoals3, startDate, endDate);
+                return NextResponse.json({ message: "Goals updated." }, { status: 200 });
+            } else {
+                return NextResponse.json({ message: "No existing goals found to update." }, { status: 404 });
+            }
+ 
+        }
     } catch (error) {
         console.error("Error:", error);
         return NextResponse.json(

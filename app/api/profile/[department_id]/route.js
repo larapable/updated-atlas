@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import Department from "@/models/department.js";
-import Goals from '/models/goals.js';
+import Goals from "/models/goals.js";
 
 export async function GET(req, { params }) {
   try {
@@ -9,7 +9,6 @@ export async function GET(req, { params }) {
 
     // Fetch department details from the database
     const department = await Department.getDepartmentDetailsById(department_id);
-  
 
     if (department) {
       // Department found, return the department details
@@ -22,8 +21,6 @@ export async function GET(req, { params }) {
         description,
       } = department;
 
-   
-
       return NextResponse.json({
         department_name,
         headOfficer,
@@ -33,8 +30,6 @@ export async function GET(req, { params }) {
         description,
       });
     } else {
-      // No department found with the given ID
-      console.log("Department not found for ID:", department_id);
       return NextResponse.json(
         { message: "Department not found." },
         { status: 404 }

@@ -3,7 +3,19 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { toast } from "react-toastify";
 
+interface InternalScorecard {
+  id: number;
+  target_code: string;
+  start_date: Date;
+  completion_date: Date;
+  office_target: string;
+  status: string;
+  key_performance_indicator: string;
+  target_performance: string;
+  actual_performance: string;
+}
 export default function Internal() {
   const { data: session, status, update } = useSession();
   console.log("useSession Hook session object", session);
@@ -11,8 +23,10 @@ export default function Internal() {
   if (session?.user?.name) user = JSON.parse(session?.user?.name as string);
   const department_id = user?.department_id;
 
-  // internal
+  // open modal
   const [internalModalOpen, setInternalModalOpen] = useState(false);
+
+  // internal values
   const [internalTargetCode, setInternalTargetCode] = useState("");
   const [internalStartDate, setInternalStartDate] = useState<Date | null>(null);
   const [internalTargetCompletionDate, setInternalTargetCompletionDate] =
@@ -21,18 +35,22 @@ export default function Internal() {
   const [internalTargetPerformance, setInternalTargetPerformance] =
     useState("");
   const [internalStatus, setInternalStatus] = useState("");
+  const [internalKPI, setInternalKPI] = useState("");
   const [internalActualPerformance, setInternalActualPerformance] =
     useState("");
   const [internalLevelOfAttainment, setInternalLevelOfAttainment] =
     useState("");
+
   const [internalSavedScorecards, setInternalSavedScorecards] = useState<
-    string[]
+    InternalScorecard[]
   >([]);
+
+  // Track edit mode
   const [internalEditMode, setInternalEditMode] = useState<number | null>(null);
-  const [internalKPI, setInternalKPI] = useState("");
 
   const handleInternalCloseModal = () => {
     setInternalModalOpen(false);
+    setInternalEditMode(null); // Reset the edit mode
   };
 
   const handleInternalAddMoreScorecard = () => {
@@ -58,19 +76,36 @@ export default function Internal() {
     return levelOfAttainmentInternal.toFixed(2) + "%";
   };
 
+  // display the update level of attainment base sa actual performance
   const handleInternalActualPerformanceChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const newActualPerformanceInternal = parseFloat(e.target.value); // Parse the input value to a number
-    setInternalActualPerformance(newActualPerformanceInternal.toString()); // Update the state with the parsed value
-    const newLevelOfAttainmentInternal = calculateInternalLevelOfAttainment(
-      newActualPerformanceInternal,
-      parseFloat(internalTargetPerformance)
-    );
-    setInternalLevelOfAttainment(newLevelOfAttainmentInternal.toString());
+    const value = e.target.value;
+    //Allow backspacea to clear the input
+    if (value === "") {
+      setInternalActualPerformance("");
+      setInternalLevelOfAttainment("0%");
+    } else {
+      const newActualPerformance = parseFloat(value);
+      // Check if the value is a number or not NaN
+      if (!isNaN(newActualPerformance) && newActualPerformance <= 100) {
+        setInternalActualPerformance(newActualPerformance.toString());
+        // Assuming stakeholderTargetPerformance is already set from the database
+        const targetPerformance = parseFloat(internalTargetPerformance);
+        if (targetPerformance > 0) {
+          // Make sure not to divide by zero
+          const newLevelOfAttainment = calculateInternalLevelOfAttainment(
+            newActualPerformance,
+            targetPerformance
+          );
+          setInternalLevelOfAttainment(newLevelOfAttainment);
+        }
+      }
+    }
   };
 
-  const handleInternalSaveScorecard = () => {
+  const handleInternalSaveScorecard = async () => {
+    // Check if all fields are filled
     if (
       !internalTargetCode ||
       !internalStartDate ||
@@ -79,54 +114,65 @@ export default function Internal() {
       !internalTargetPerformance ||
       !internalStatus ||
       !internalKPI ||
-      !internalActualPerformance
+      !internalActualPerformance ||
+      parseFloat(internalTargetPerformance) > 100 ||
+      parseFloat(internalActualPerformance) > 100
     ) {
-      alert("Please fill in all fields.");
+      toast.error(
+        "Please fill in all fields and ensure performance values do not exceed 100."
+      );
       return;
     }
 
-    if (internalEditMode !== null) {
-      // If in edit mode, update the existing Scorecard
-      const internalFormatDateString = (date: Date | null) => {
-        return date ? date.toISOString().split("T")[0] : "N/A";
-      };
-      const internalUpdatedScorecard = `${internalTargetCode} ${internalFormatDateString(
-        internalStartDate
-      )} ${internalFormatDateString(
-        internalTargetCompletionDate
-      )} ${internalOfficeTarget} ${internalTargetPerformance} ${internalStatus} ${internalKPI} ${internalActualPerformance} ${calculateInternalLevelOfAttainment(
-        parseFloat(internalActualPerformance),
-        parseFloat(internalTargetPerformance)
-      )}`;
+    try {
+      // Send the POST request to the server
+      const response = await fetch("/api/internalBSC", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          department_id: department_id,
+          target_code: internalTargetCode,
+          start_date: internalStartDate,
+          completion_date: internalTargetCompletionDate,
+          office_target: internalOfficeTarget,
+          status: internalStatus,
+          key_performance_indicator: internalKPI,
+          target_performance: internalTargetPerformance,
+          actual_performance: internalActualPerformance,
+        }),
+      });
 
-      const internalUpdatedScorecards = internalSavedScorecards.map(
-        (Scorecard, index) => {
-          if (index === internalEditMode) {
-            return internalUpdatedScorecard;
-          } else {
-            return Scorecard;
-          }
-        }
-      );
-      setInternalSavedScorecards(internalUpdatedScorecards);
-    } else {
-      const internalFormatDateString = (date: Date | null) => {
-        return date ? date.toISOString().split("T")[0] : "N/A";
-      };
-      const internalNewScorecard = `${internalTargetCode} ${internalFormatDateString(
-        internalStartDate
-      )} ${internalFormatDateString(
-        internalTargetCompletionDate
-      )} ${internalOfficeTarget} ${internalTargetPerformance} ${internalStatus} ${internalKPI} ${internalActualPerformance} ${calculateInternalLevelOfAttainment(
-        parseFloat(internalActualPerformance),
-        parseFloat(internalTargetPerformance)
-      )}`;
-      setInternalSavedScorecards([
-        ...internalSavedScorecards,
-        internalNewScorecard,
-      ]);
+      // Parse the JSON response
+      const result = await response.json();
+
+      // Handle the response based on the status code
+      if (response.ok) {
+        console.log("Internal scorecard data submitted successfully:", result);
+        // Update the saved scorecards
+        const newScorecard = { ...result.data };
+        setInternalSavedScorecards((prevScorecards) => [
+          ...prevScorecards,
+          newScorecard,
+        ]);
+        // Set the edit mode to the new scorecard's ID
+        setInternalEditMode(newScorecard.id);
+        // Close the modal after saving
+        setInternalModalOpen(false);
+        window.location.reload();
+      } else {
+        toast.error(
+          "Failed to submit internal scorecard data:",
+          result.message
+        );
+        // Perform any error actions, like alerts or state updates
+      }
+    } catch (error) {
+      console.error("Error submitting internal scorecard data:", error);
+      // Handle network errors here
     }
-
+    // Reset modal state for the next input
     setInternalModalOpen(false);
     setInternalEditMode(null);
     setInternalTargetCode("");
@@ -140,22 +186,153 @@ export default function Internal() {
     setInternalLevelOfAttainment("");
   };
 
-  const handleInternalEditScorecard = (index: number) => {
-    const LearningScorecardData = internalSavedScorecards[index]
-      .split(" ")
-      .map((item) => item.trim());
-    setInternalTargetCode(LearningScorecardData[0]);
-    setInternalStartDate(new Date(LearningScorecardData[1]));
-    setInternalTargetCompletionDate(new Date(LearningScorecardData[2]));
-    setInternalOfficeTarget(LearningScorecardData[3]);
-    setInternalTargetPerformance(LearningScorecardData[4]);
-    setInternalStatus(LearningScorecardData[5]);
-    setInternalKPI(LearningScorecardData[6]);
-    setInternalActualPerformance(LearningScorecardData[7]);
-    setInternalLevelOfAttainment(LearningScorecardData[8]);
+  const handleInternalUpdateScorecard = async () => {
+    if (!internalEditMode) return; // Exit if not in edit mode
 
-    setInternalModalOpen(true);
-    setInternalEditMode(index);
+    try {
+      const response = await fetch(`/api/internalBSC/${internalEditMode}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: internalEditMode,
+          target_code: internalTargetCode,
+          start_date: internalStartDate,
+          completion_date: internalTargetCompletionDate,
+          office_target: internalOfficeTarget,
+          status: internalStatus,
+          key_performance_indicator: internalKPI,
+          target_performance: internalTargetPerformance,
+          actual_performance: internalActualPerformance,
+        }),
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        const updatedScorecard = result.data;
+        setInternalSavedScorecards((prevScorecards) =>
+          prevScorecards.map((scorecard) =>
+            scorecard.id === internalEditMode ? updatedScorecard : scorecard
+          )
+        );
+        toast.success("Scorecard updated successfully.");
+      } else {
+        toast.error(`Failed to update scorecard: ${result.message}`);
+      }
+    } catch (error) {
+      toast.error("Error updating scorecard. Please try again.");
+    }
+
+    // Reset modal state after update
+    setInternalModalOpen(false);
+    setInternalEditMode(null);
+    setInternalTargetCode("");
+    setInternalStartDate(null);
+    setInternalTargetCompletionDate(null);
+    setInternalOfficeTarget("");
+    setInternalStatus("");
+    setInternalKPI("");
+    setInternalTargetPerformance("");
+    setInternalActualPerformance("");
+  };
+
+  // Determine which function to call when the save button is clicked
+  const handleSaveButtonClick = () => {
+    if (internalEditMode) {
+      handleInternalUpdateScorecard();
+    } else {
+      handleInternalSaveScorecard();
+    }
+  };
+
+  // Fetch the saved financial scorecards from the server
+  useEffect(() => {
+    const fetchInternalScorecards = async () => {
+      if (!department_id) {
+        console.log("Department ID is not available yet.");
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `/api/getInternalScorecard/${department_id}`
+        );
+        if (!response.ok) {
+          throw new Error("Failed to fetch internal scorecards");
+        }
+        const data = await response.json();
+        setInternalSavedScorecards(data.internal_bsc);
+      } catch (error) {
+        console.error("Error fetching internal scorecards:", error);
+      }
+    };
+
+    fetchInternalScorecards();
+  }, [department_id]);
+
+  const handleStartDateChange = (date: Date | null) => {
+    console.log("Selected Start Date", date);
+    if (date) {
+      // Convert the selected date to UTC before saving it
+      const utcDate = new Date(
+        Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+      );
+      setInternalStartDate(utcDate);
+    } else {
+      setInternalStartDate(null);
+    }
+  };
+
+  const handleCompletionDateChange = (date: Date | null) => {
+    console.log("Selected Start Date", date);
+    if (date) {
+      // Convert the selected date to UTC before saving it
+      const utcDate = new Date(
+        Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+      );
+      setInternalTargetCompletionDate(utcDate);
+    } else {
+      setInternalTargetCompletionDate(null);
+    }
+  };
+
+  const handleInternalEditScorecard = (id: number) => {
+    const scorecardToEdit = internalSavedScorecards.find(
+      (scorecard) => scorecard.id === id
+    );
+    if (scorecardToEdit) {
+      // Convert the start date and completion date to the local timezone before setting them
+      const startDate = new Date(scorecardToEdit.start_date);
+      startDate.setMinutes(
+        startDate.getMinutes() - startDate.getTimezoneOffset()
+      );
+      setInternalStartDate(startDate);
+
+      const completionDate = new Date(scorecardToEdit.completion_date);
+      completionDate.setMinutes(
+        completionDate.getMinutes() - completionDate.getTimezoneOffset()
+      );
+      setInternalTargetCompletionDate(completionDate);
+
+      // Set the other fields
+      setInternalTargetCode(scorecardToEdit.target_code);
+      setInternalOfficeTarget(scorecardToEdit.office_target);
+      setInternalStatus(scorecardToEdit.status);
+      setInternalKPI(scorecardToEdit.key_performance_indicator);
+      setInternalTargetPerformance(scorecardToEdit.target_performance);
+      setInternalActualPerformance(scorecardToEdit.actual_performance);
+      setInternalLevelOfAttainment(
+        calculateInternalLevelOfAttainment(
+          parseFloat(scorecardToEdit.actual_performance),
+          parseFloat(scorecardToEdit.target_performance)
+        )
+      );
+
+      // Open the modal and enter edit mode
+      setInternalEditMode(id);
+      setInternalModalOpen(true);
+    }
   };
 
   return (
@@ -190,95 +367,91 @@ export default function Internal() {
         {/* Other perspective toggles */}
       </div>
       <div className="bg-[#ffffff] gap-2 w-[100%] h-[100%] flex flex-col pt-4 pr-3 pb-6 box-sizing-border rounded-lg border border-yellow-500 overflow-y-auto overflow-x-hidden">
-        {internalSavedScorecards.map((Scorecard, index) => {
-          const [
-            internalTargetCode,
-            internalStartDate,
-            internalTargetCompletionDate,
-            internalOfficeTarget,
-            internalTargetPerformance,
-            internalStatus,
-            internalKPI,
-            internalActualPerformance,
-            internalLevelOfAttainment,
-          ] = Scorecard.split(" ");
-          const parsedLevelOfAttainment = parseFloat(internalLevelOfAttainment); // Convert to a number
+        {internalSavedScorecards &&
+          internalSavedScorecards.length > 0 &&
+          internalSavedScorecards.map((item) => {
+            const levelOfAttainment = calculateInternalLevelOfAttainment(
+              parseFloat(item.actual_performance),
+              parseFloat(item.target_performance)
+            );
 
-          // Validate and limit the values to the range of 1-100
-          const validatedTargetPerformance = Math.min(
-            Math.max(parseInt(internalTargetPerformance), 1),
-            100
-          );
-          const validatedActualPerformance = Math.min(
-            Math.max(parseInt(internalActualPerformance), 1),
-            100
-          );
-          const validatedLevelOfAttainment = Math.min(
-            Math.max(parseFloat(internalLevelOfAttainment), 1),
-            100
-          );
+            // Validate the level of attainment to be between 1 and 100
+            const validatedLevelOfAttainment = Math.min(
+              Math.max(parseFloat(levelOfAttainment), 1),
+              100
+            );
 
-          const progressColor =
-            validatedLevelOfAttainment >= 50 ? "bg-green-500" : "bg-red-500";
-          const progressBarWidth = `${
-            (validatedLevelOfAttainment / 100) * 20
-          }rem`; // Adjust the width of the progress bar
+            const progressColor =
+              parseFloat(levelOfAttainment) >= 100
+                ? "bg-green-600" // A darker shade of green to indicate full completion
+                : parseFloat(levelOfAttainment) >= 50
+                ? "bg-green-500"
+                : "bg-red-500";
 
-          return (
-            <div
-              key={index}
-              className="bg-[#ffffff] relative ml-2 flex flex-row pt-4 pb-4 w-[100rem] h-auto box-sizing-border"
-            >
-              <div className="mr-5 gap-10">
-                <p className="flex flex-row">
-                  <div className="w-[57rem] flex flex-row">
-                    <span className="font-bold bg-yellow-200 pt-2 pb-2 pr-1 pl-2 text-[#962203] mt-[-0.5rem] mr-3 ml-1">
-                      {internalTargetCode}:{" "}
-                    </span>
-                    <span className="font-regular">
-                      {internalOfficeTarget.length > 60
-                        ? `${internalOfficeTarget.substring(0, 60)}...`
-                        : internalOfficeTarget}{" "}
-                    </span>
-                  </div>
-                  <div className="flex items-center w-[35rem]">
-                    <span className="font-regular mr-5 ml-10">
-                      {internalTargetCompletionDate}{" "}
-                    </span>
-                    <div
-                      className={`h-5 ${progressColor}`}
-                      style={{ width: progressBarWidth }}
-                    ></div>
-                  </div>
-                  <div className="flex items-center ml-[-3rem]">
-                    <span className="font-bold ">
-                      {validatedLevelOfAttainment}%{" "}
-                    </span>
-                    <div className="font-bold border rounded-lg bg-yellow-200 border-yellow-500 pt-1 pr-2 pl-2 ml-5 mt-[-0.5rem]  ">
-                      {internalStatus}{" "}
+            const progressBarWidth = `${
+              (validatedLevelOfAttainment / 100) * 20
+            }rem`; // Adjust the width of the progress bar
+
+            return (
+              <div
+                key={item.id}
+                className="bg-[#ffffff] relative ml-2 flex flex-row pt-4 pb-4 w-[90rem] h-auto box-sizing-border"
+              >
+                <div className="mr-5 gap-10">
+                  <p className="flex flex-row">
+                    <div className="w-[45rem] flex flex-row">
+                      <span className="font-bold bg-yellow-200 pt-2 pb-2 pr-1 pl-2 text-[#962203] mt-[-0.5rem] mr-3 ml-1">
+                        {item.target_code || "N/A"}:
+                      </span>
+                      <span className="font-regular">
+                        {internalOfficeTarget.length > 60
+                          ? `${(item.office_target || "N/A").substring(
+                              0,
+                              60
+                            )}...`
+                          : item.office_target || "N/A"}{" "}
+                      </span>
                     </div>
-                  </div>
-                </p>
+                    <div className="flex items-center w-[35rem]">
+                      <span className="font-regular mr-5 ml-10">
+                        {item.completion_date
+                          ? new Date(item.completion_date).toLocaleDateString()
+                          : "N/A"}
+                      </span>
+                      <div
+                        className={`h-5 ${progressColor}`}
+                        style={{ width: progressBarWidth }}
+                      ></div>
+                    </div>
+                    <div className="flex items-center ml-[-3rem]">
+                      <span className="font-bold ">
+                        {validatedLevelOfAttainment}%{" "}
+                      </span>
+                      <div className="font-bold border rounded-lg bg-yellow-200 border-yellow-500 pt-1 pr-2 pl-2 ml-5 mt-[-0.5rem]  ">
+                        {item.status || "N/A"}{" "}
+                      </div>
+                    </div>
+                  </p>
+                </div>
+                <button onClick={() => handleInternalEditScorecard(item.id)}>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="1.5"
+                    stroke="currentColor"
+                    className="w-6 h-6"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+                    />
+                  </svg>
+                </button>
               </div>
-              <button onClick={() => handleInternalEditScorecard(index)}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth="1.5"
-                  stroke="currentColor"
-                  className="w-6 h-6"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
-                  />
-                </svg>
-              </button>
-            </div>
-          );
-        })}
+            );
+          })}
       </div>
       {internalModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center">
@@ -324,10 +497,11 @@ export default function Internal() {
                   Start Date
                 </span>
                 <DatePicker
+                  key={internalStartDate?.toString()}
                   selected={internalStartDate}
-                  onChange={(date) => setInternalStartDate(date)}
+                  onChange={handleStartDateChange}
                   minDate={new Date()}
-                  placeholderText="YYYY-MM-DD"
+                  placeholderText="MM-DD-YYYY"
                   className="border border-gray-300 px-3 py-2 mt-1 rounded-lg w-[25rem]"
                 />
               </div>
@@ -336,10 +510,11 @@ export default function Internal() {
                   Target Completion Date
                 </span>
                 <DatePicker
+                  key={internalTargetCompletionDate?.toString()}
                   selected={internalTargetCompletionDate}
-                  onChange={(date) => setInternalTargetCompletionDate(date)}
+                  onChange={handleCompletionDateChange}
                   minDate={new Date()}
-                  placeholderText="YYYY-MM-DD"
+                  placeholderText="MM-DD-YYYY"
                   className="border border-gray-300 px-3 py-2 mt-1 rounded-lg w-[25rem]"
                 />
               </div>
@@ -424,12 +599,15 @@ export default function Internal() {
             </div>
             <div className="flex flex-row justify-center mt-10 gap-10">
               <button
-                onClick={handleInternalSaveScorecard}
+                onClick={handleSaveButtonClick}
                 className="bg-[#FAD655] text-[#962203] font-semibold hover:bg-white border hover:border-yellow-500 px-4 py-2 mt-4 rounded-lg w-40"
               >
                 {internalEditMode ? "Edit" : "Save"}
               </button>
-              <button className="bg-[#FAD655] text-[#962203] font-semibold hover:bg-white border hover:border-yellow-500 px-4 py-2 mt-4 rounded-lg w-40">
+              <button
+                onClick={handleInternalCloseModal}
+                className="bg-[#FAD655] text-[#962203] font-semibold hover:bg-white border hover:border-yellow-500 px-4 py-2 mt-4 rounded-lg w-40"
+              >
                 Cancel
               </button>
             </div>

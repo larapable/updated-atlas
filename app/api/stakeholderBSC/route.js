@@ -3,7 +3,6 @@ import Bsc from "@/models/bsc.js";
 
 export async function POST(req) {
   try {
-
     const {
       department_id,
       target_code,
@@ -16,7 +15,6 @@ export async function POST(req) {
       actual_performance,
     } = await req.json();
 
-
     console.log("DeptId: ", department_id);
     console.log("TargetCode: ", target_code);
     console.log("OfficeTarget: ", office_target);
@@ -26,9 +24,9 @@ export async function POST(req) {
     console.log("KPI: ", key_performance_indicator);
     console.log("TargetPerformance: ", target_performance);
     console.log("ActualPerformance: ", actual_performance);
-    
+
     // Insert the data into the database
-    const insertedData = await Bsc.insertFinancialBscData(
+    const insertedData = await Bsc.insertStakeholderBscData(
       department_id,
       target_code,
       office_target,

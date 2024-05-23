@@ -1,22 +1,21 @@
 import Link from "next/link";
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch } from '@fortawesome/free-solid-svg-icons';
-
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faSearch } from "@fortawesome/free-solid-svg-icons";
+import { TiLocationArrowOutline } from "react-icons/ti";
 
 export default function Navbar() {
   return (
-    <div className="fixed top-0 left-0 flex flex-col bg-[#8A252C] h-screen w-[18rem] py-5 overflow-auto gap-2">
+    <div className="fixed top-0 left-0 flex flex-col h-screen w-[18rem] py-5 overflow-auto gap-2"
+    style={{
+      backgroundImage: `url('bgimagemaroon.png')`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+    }}
+    >
       <div className="flex items-center justify-center">
         {/* ilisi nig atlasLogo  */}
-        <img src="/logo.png" alt="" className=" h-28 w-58 mt-4 mb-14 " /> 
-      </div>
-      <div className="shadow-sm bg-[#ffffff] ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset border-opacity-60 rounded-lg w-[16rem] h-14 flex items-center ml-3 px-5 py-2">
-      <FontAwesomeIcon icon={faSearch} className="text-gray-400 h-5" />
-        <input
-          type="text"
-          placeholder="Search"
-          className="flex-1 font-medium placeholder-[#807979] placeholder:text-xl bg-transparent focus:outline-none text-md px-2 py-1 mr-4"
-        />
+        <img src="/logo.png" alt="" className=" h-28 w-58 mt-4 mb-14 " />
       </div>
       <Link href="/">
         <div className="mx-3 border-[0.1rem] border-solid border-transparent rounded-lg w-[16rem] h-14 mb-3 py-4 px-3 flex items-center text-white hover:bg-[#eec160] hover:text-[#8a252c] transition-colors duration-300">
@@ -102,27 +101,14 @@ export default function Navbar() {
       </Link>
       <Link href="/stratmap">
         <div className="mx-3 border-[0.1rem] border-solid border-transparent rounded-lg w-[16rem] h-14 mb-3 py-4 px-3 flex items-center text-white hover:bg-[#eec160] hover:text-[#8a252c] transition-colors duration-300">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke-width="2"
-            stroke="currentColor"
-            className="w-8 h-8"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M12 18v-5.25m0 0a6.01 6.01 0 0 0 1.5-.189m-1.5.189a6.01 6.01 0 0 1-1.5-.189m3.75 7.478a12.06 12.06 0 0 1-4.5 0m3.75 2.383a14.406 14.406 0 0 1-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 1 0-7.517 0c.85.493 1.509 1.333 1.509 2.316V18"
-            />
-          </svg>
+          <TiLocationArrowOutline className="w-8 h-8" />
 
           <div className="flex-1 px-3 py-1 ml-1  mr-4 font-medium bg-transparent focus:outline-none text-xl">
             Strat Mapping
           </div>
         </div>
       </Link>
-      <Link href="/bscorecard">
+      <Link href="/scorecard">
         <div className="mx-3 border-[0.1rem] border-solid border-transparent rounded-lg w-[16rem] h-14 mb-3 py-4 px-3 flex items-center text-white hover:bg-[#eec160] hover:text-[#8a252c] transition-colors duration-300">
           <svg
             xmlns="http://www.w3.org/2000/svg"

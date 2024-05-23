@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Navbar from "../components/Navbar";
 import UserHeader from "../components/UserHeader";
 import { FaPlus } from "react-icons/fa";
+import { FaEdit, FaTrashAlt } from 'react-icons/fa';
 import Card from '@mui/material/Card';
 import TextField from '@mui/material/TextField';
 import { toast } from "react-toastify";
@@ -14,6 +15,27 @@ interface SwotItem {
   id: string;
   value: string;
 }
+
+interface Strategy {
+  id: string;
+  'w-tResponses': string;
+}
+
+interface Strategy1 {
+  id: string;
+  's-tResponses': string;
+}
+
+interface Strategy2 {
+  id: string;
+  's-oResponses': string;
+}
+
+interface Strategy3 {
+  id: string;
+  'w-oResponses': string;
+}
+
 
 const Swot = () => {
   const [displaySwot, setDisplaySwot] = useState(true);
@@ -38,14 +60,38 @@ const Swot = () => {
     callSTAPI();
     callWOAPI();
     callSOAPI();
+    setModalVisible(true);
   }
+  const [wtApiresponse, setWtApiresponse] = useState<Strategy[]>([]);
+  const [stApiresponse, setStApiresponse] = useState<Strategy1[]>([]);
+  const [soApiresponse, setSoApiresponse] = useState<Strategy2[]>([]);
+  const [woApiresponse, setWoApiresponse] = useState<Strategy3[]>([]);
+
+  const fetchData = async () => {
+    try {
+      const response = await fetch(`api/wtStrategy/${department_id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch data');
+      }
+      const data = await response.json();
+      console.log(data);
+      setWtApiresponse(data);
+    } catch (error: any) {
+      console.error('Error fetching the data:', error.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [department_id]);
+
   
   const callWTAPI = async () => {
     try {
-        const systemPrompt =
-          "You will provide specific actionable strategies that mitigate your weaknesses (W) to avoid threats (T) and must keep your entire response within 1 sentence. No extra words. If the text is blank, output 'Field is blank.'.  Do not output any markdown. You should output in this format: W1T1: sentence here. '(||)' (new line here) \nW2T2: sentence here.Generate as much as you can from the inputted SWOT";
-      
-          const weaknessesInput = fetchedWeaknesses
+      const systemPrompt =
+        "You will provide specific actionable strategies that mitigate your weaknesses (W) to avoid threats (T). Keep each strategy within 1 sentence and do not include extra words. If the text is blank, output 'Field is blank.'. Do not output any markdown. You should output in this format: W1T1: sentence here. (new line here) \nW2T2: sentence here.Generate as many strategies as you can from the inputted SWOT. Separate each strategy with a new line.";
+  
+      const weaknessesInput = fetchedWeaknesses
         .map(
           (weakness, index) =>
             `${index + 1}. ${weakness.id}: ${weakness.value}`
@@ -54,13 +100,12 @@ const Swot = () => {
   
       const threatsInput = fetchedThreats
         .map(
-          (threat, index) =>
-            `${index + 1}. ${threat.id}: ${threat.value}`
+          (threat, index) => `${index + 1}. ${threat.id}: ${threat.value}`
         )
         .join("\n");
   
       console.log('Weaknesses Input:', weaknessesInput);
-      console.log('threats Input:', threatsInput);
+      console.log('Threats Input:', threatsInput);
   
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyATO5xndEGhEgXrHdeYLOiTbZqtUwYuZqE`,
@@ -89,37 +134,79 @@ const Swot = () => {
         data.candidates?.[0]?.content?.parts?.[0]?.text ||
         "No response received";
   
-      // Split the API response by "(||)" followed by a space
-      const responseArray = apiResponse.split("(||)");
+      // Split the API response by new line
+      const strategiesArray = apiResponse.split("\n").filter((str: string) => str.trim());
   
-      // Save each response from the array individually to the database
-      for (const response of responseArray) {
+      // Save each strategy individually to the database
+      for (const strategy of strategiesArray) {
         const databaseResponse = await fetch("/api/wtStrategy", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ response }),
+          body: JSON.stringify({ response: strategy, department_id: department_id}),
         });
   
         if (!databaseResponse.ok) {
           console.error("Error saving response to database", databaseResponse);
         }
       }
-  
-      setWtApiResponse(apiResponse);
-      console.log("wt api: ", responseArray); // Log the array of responses
+       
+       fetchData();
+      // setWtApiResponse(apiResponse);
+      // console.log("WT Strategies:", strategiesArray);
     } catch (error) {
       console.error("Error calling Gemini API:", error);
       setWtApiResponse("An error occurred while calling the API");
     }
   };
-    
+
+  const deleteStrategy = async (id: string, department_id: string) => {
+    try {
+      const response = await fetch(`/api/wtStrategy`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({id: id, department_id: department_id}),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete strategy");
+      }
+
+      // Remove the strategy from the state to update the UI
+      fetchData();
+    } catch (error:any) {
+      console.error("Error deleting strategy:", error.message);
+    }
+  };
+  
+  const fetchstData = async () => {
+    try {
+      const response = await fetch(`api/stStrategy/${department_id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch data');
+      }
+      const data = await response.json();
+      console.log(data);
+      setStApiresponse(data);
+    } catch (error: any) {
+      console.error('Error fetching the data:', error.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchstData();
+  }, [department_id]);
+
+
+  
   
   const callSTAPI = async () => {
     try {
       const systemPrompt =
-        "You will provide specific actionable strategies that leverage your strengths (S) to avoid threats (T) and must keep your entire response within 1 sentence. No extra words. If the text is blank, output 'Field is blank.'. Do not output any markdown. You should output in this format: S1T1: sentence here. '(||)' (new line here)S2T2: sentence here.Generate as much as you can from the inputted SWOT.";
+      "You will provide specific actionable strategies that leverage your strengths (S) to avoid threats (T). Keep each strategy within 1 sentence and do not include extra words. If the text is blank, output 'Field is blank.'. Do not output any markdown. You should output in this format: S1T1: sentence here. (new line here) \nS2T2: sentence here.Generate as many strategies as you can from the inputted SWOT. Separate each strategy with a new line.";
   
   
       const strengthsInput = fetchedStrengths
@@ -163,42 +250,83 @@ const Swot = () => {
       const data = await response.json();
       console.log("st api: ", response);
       const apiResponse =
-        data.candidates?.[0]?.content?.parts?.[0]?.text ||
-        "No response received";
+      data.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "No response received";
+
+    // Split the API response by new line
+    const strategiesArray = apiResponse.split("\n").filter((str: string) => str.trim());
   
-      // Split the API response by "(||)" followed by a space
-      const responseArray = apiResponse.split("(||)");
-  
-      // Save each response from the array individually to the database
-      for (const response of responseArray) {
-        const databaseResponse = await fetch("/api/stStrategy", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ response }),
-        });
-  
-        if (!databaseResponse.ok) {
-          console.error("Error saving response to database", databaseResponse);
-        }
+     // Save each strategy individually to the database
+     for (const strategy of strategiesArray) {
+      const databaseResponse = await fetch("/api/stStrategy", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ response: strategy, department_id: department_id}),
+      });
+
+      if (!databaseResponse.ok) {
+        console.error("Error saving response to database", databaseResponse);
       }
-  
-      setStApiResponse(apiResponse);
-      console.log(responseArray); // Log the array of responses
+    }
+        fetchstData();
+      // setStApiResponse(apiResponse);
+      // console.log(strategiesArray); // Log the array of responses
     } catch (error) {
       console.error("Error calling Gemini API:", error);
       setStApiResponse("An error occurred while calling the API");
     }
   };
+
+
+  const deletestStrategy = async (id: string, department_id: string) => {
+    try {
+      const response = await fetch(`/api/stStrategy`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({id: id, department_id: department_id}),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete strategy");
+      }
+
+      // Remove the strategy from the state to update the UI
+      fetchstData();
+    } catch (error:any) {
+      console.error("Error deleting strategy:", error.message);
+    }
+  };
+
+  const fetchsoData = async () => {
+    try {
+      const response = await fetch(`api/soStrategy/${department_id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch data');
+      }
+      const data = await response.json();
+      console.log(data);
+      setSoApiresponse(data);
+    } catch (error: any) {
+      console.error('Error fetching the data:', error.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchsoData();
+  }, [department_id]);
  
 
   const callSOAPI = async () => {
     try {
       const systemPrompt =
-        "You will provide specific actionable strategies that leverage your strengths (S) to capitalize on opportunities (O) and must keep your entire response within 1 sentence. No extra words. If the text is blank, output 'Field is blank.'.  Do not output any markdown. You should output in this format: S1O1: sentence here. '(||)' (new line here)S2O2: sentence here.Generate as much as you can from the inputted SWOT.";
-    
-        const strengthsInput = fetchedStrengths
+      "You will provide specific actionable strategies that leverage your strengths (S) to capitalize on opportunities (O). Keep each strategy within 1 sentence and do not include extra words. If the text is blank, output 'Field is blank.'. Do not output any markdown. You should output in this format: S1O1: sentence here. (new line here) \nS2O2: sentence here.Generate as many strategies as you can from the inputted SWOT. Separate each strategy with a new line.";
+
+  
+      const strengthsInput = fetchedStrengths
         .map(
           (strength, index) =>
             `${index + 1}. ${strength.id}: ${strength.value}`
@@ -216,7 +344,7 @@ const Swot = () => {
       console.log('Opportunities Input:', OpportunitiesInput);
   
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyATO5xndEGhEgXrHdeYLOiTbZqtUwYuZqE`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyCHBgtESP-yMWPw--FOhDCvHynp3syYpXk`,
         {
           method: "POST",
           headers: {
@@ -227,7 +355,7 @@ const Swot = () => {
               {
                 parts: [
                   {
-                    text: `${systemPrompt} \n\nStrengths:\n${strengthsInput}\n\nOpportunities:\n${OpportunitiesInput}`,
+                    text: `${systemPrompt} \n\nStrengths:\n${strengthsInput}\n\Opportunities:\n${OpportunitiesInput}`,
                   },
                 ],
               },
@@ -237,41 +365,82 @@ const Swot = () => {
       );
   
       const data = await response.json();
-      console.log(response);
+      console.log("SO API Response:", data);
       const apiResponse =
-        data.candidates?.[0]?.content?.parts?.[0]?.text ||
-        "No response received";
+      data.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "No response received";
+
+    // Split the API response by new line
+    const strategiesArray = apiResponse.split("\n").filter((str: string) => str.trim());
   
-      // Split the API response by "(||)" followed by a space
-      const responseArray = apiResponse.split("(||)");
-  
-      // Save each response from the array individually to the database
-      for (const response of responseArray) {
-        const databaseResponse = await fetch("/api/soStrategy", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ response }),
-        });
-  
-        if (!databaseResponse.ok) {
-          console.error("Error saving response to database", databaseResponse);
-        }
+      // Save each strategy individually to the database
+     for (const strategy of strategiesArray) {
+      const databaseResponse = await fetch("/api/soStrategy", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ response: strategy, department_id: department_id}),
+      });
+
+      if (!databaseResponse.ok) {
+        console.error("Error saving response to database", databaseResponse);
       }
-  
-      setSoApiResponse(apiResponse);
-      console.log(responseArray); // Log the array of responses
+    }
+        fetchsoData();
+      // setSoApiResponse(apiResponse);
+      
+      console.log(strategiesArray); // Log the array of responses
     } catch (error) {
       console.error("Error calling Gemini API:", error);
       setSoApiResponse("An error occurred while calling the API");
     }
   };
 
+  const deletesoStrategy = async (id: string, department_id: string) => {
+    try {
+      const response = await fetch(`/api/soStrategy`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({id: id, department_id: department_id}),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete strategy");
+      }
+
+      // Remove the strategy from the state to update the UI
+      fetchsoData();
+    } catch (error:any) {
+      console.error("Error deleting strategy:", error.message);
+    }
+  };
+
+  const fetchwoData = async () => {
+    try {
+      const response = await fetch(`api/woStrategy/${department_id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch data');
+      }
+      const data = await response.json();
+      console.log(data);
+      setWoApiresponse(data);
+    } catch (error: any) {
+      console.error('Error fetching the data:', error.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchwoData();
+  }, [department_id]);
+
+  
   const callWOAPI = async () => {
     try {
       const systemPrompt =
-        "You will provide specific actionable strategies that mitigate your weaknesses (W) to capitalize on opportunities (O) and must keep your entire response within 1 sentence. No extra words. If the text is blank, output 'Field is blank.'. Do not output any markdown. You should output in this format: W1O1: sentence here. '(||)' (new line here)W2O2: sentence here.Generate as much as you can from the inputted SWOT.";
+      "You will provide specific actionable strategies that mitigate your weaknesses (W) to capitalize on opportunities (O). Keep each strategy within 1 sentence and do not include extra words. If the text is blank, output 'Field is blank.'. Do not output any markdown. You should output in this format: W1O1: sentence here. (new line here) \nW2O2: sentence here.Generate as many strategies as you can from the inputted SWOT. Separate each strategy with a new line.";
   
       const weaknessesInput = fetchedWeaknesses
         .map(
@@ -291,7 +460,7 @@ const Swot = () => {
       console.log('Opportunities Input:', OpportunitiesInput);
   
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyATO5xndEGhEgXrHdeYLOiTbZqtUwYuZqE`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyCHBgtESP-yMWPw--FOhDCvHynp3syYpXk`,
         {
           method: "POST",
           headers: {
@@ -314,35 +483,57 @@ const Swot = () => {
       const data = await response.json();
       console.log(response);
       const apiResponse =
-        data.candidates?.[0]?.content?.parts?.[0]?.text ||
-        "No response received";
+      data.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "No response received";
+
+    // Split the API response by new line
+    const strategiesArray = apiResponse.split("\n").filter((str: string) => str.trim());
   
-      // Split the API response by "(||)" followed by a space
-      const responseArray = apiResponse.split("(||)");
-  
-      // Save each response from the array individually to the database
-      for (const response of responseArray) {
+       // Save each strategy individually to the database
+       for (const strategy of strategiesArray) {
         const databaseResponse = await fetch("/api/woStrategy", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ response }),
+          body: JSON.stringify({ response: strategy, department_id: department_id}),
         });
   
         if (!databaseResponse.ok) {
           console.error("Error saving response to database", databaseResponse);
         }
       }
+          fetchwoData();
   
-      setWoApiResponse(apiResponse);
-      console.log(responseArray); // Log the array of responses
+      // setWoApiResponse(apiResponse);
+      // console.log(strategiesArray); 
     } catch (error) {
       console.error("Error calling Gemini API:", error);
       setWoApiResponse("An error occurred while calling the API");
     }
   };
+  const deletewoStrategy = async (id: string, department_id: string) => {
+    try {
+      const response = await fetch(`/api/woStrategy`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({id: id, department_id: department_id}),
+      });
 
+      if (!response.ok) {
+        throw new Error("Failed to delete strategy");
+      }
+
+      // Remove the strategy from the state to update the UI
+      fetchwoData();
+    } catch (error:any) {
+      console.error("Error deleting strategy:", error.message);
+    }
+  };
+
+    
   
   // Reusable SWOT function
   const useSwot = (initialItems: SwotItem[] = []) => {
@@ -404,7 +595,7 @@ const Swot = () => {
 
     const addWeakness  = async (event: React.KeyboardEvent) => {
       if (event.key === "Enter" && newItem.trim()) {
-        if (fetchedStrengths.length >= 5) {
+        if (fetchedWeaknesses.length >= 5) {
           toast.error("Maximum limit of 5 items reached");
         } else {
           try {
@@ -892,6 +1083,20 @@ const toggleThreatOptions = (id: any) => {
   setShowThreatOptions(showThreatOptions === id ? null : id);
 };
 
+// added 
+const [isModalOpen, setIsModalOpen] = useState(false);
+const [modalValue, setModalValue] = useState('');
+
+const openModal = (defaultValue: string) => {
+  setModalValue(defaultValue);
+  setIsModalOpen(true);
+}
+const closeModal = () => {
+  setModalVisible(false);
+};
+
+const [isModalVisible, setModalVisible] = useState(false);
+
   return (
     <div className="flex flex-row w-full h-screen bg-[#eeeeee]">
     <Navbar />
@@ -1314,13 +1519,32 @@ const toggleThreatOptions = (id: any) => {
                     Generate Strategies 
                   </span>
                 </button>
+
+                {isModalVisible && (
+
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+                  <div className="bg-white p-8 rounded-lg z-10 h-[15rem] w-[30rem]">
+                    <p className="text-2xl mb-4 justify-center font-semibold mt-20">Strategies Successfully Generated</p>
+                    <div className="justify-center align-middle items-center">
+                    <button
+                      onClick={closeModal}
+                      className="shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-[0.6rem] bg-[#FAD655] text-[#8A252C] break-words font-semibold text-lg relative flex pt-2 pr-3 pl-6 pb-2 w-36 h-[fit-content] mx-10 mb-2 mt-16 hover:bg-[#8a252c] hover:text-[#ffffff] items-center justify-center align-middle"
+                    >
+                      Close
+                    </button>
+                    </div>
+                    
+
+                  </div>
+                </div>
+              )}
               </div> 
             </div> 
           ) : (
             // STRATEGIES CONTAINER (similar structure to SWOT CONTAINER)
             <div className="flex flex-col">
               <div className="flex flex-row gap-[5rem]">
-                <Card className="flex align-center mb-6 shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-xl border  border-[0.1rem_solid_#807C7C] justify-between bg-white w-[45rem] h-[30rem]">
+                <Card className="flex align-center mb-6 shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-xl border  border-[0.1rem_solid_#807C7C] justify-between bg-white w-[45rem] h-[50rem]">
                   <div className="flex flex-col">
                     <div className="flex flex-row mt-4 mx-3 p-2 rounded-[0.6rem] bg-[#962203] w-[43.3rem] h-10 justify-between items-center">
                       <span className="ml-2 relative font-semibold text-[1.3rem] text-[#FFFFFF]">
@@ -1328,14 +1552,22 @@ const toggleThreatOptions = (id: any) => {
                       </span>
                       <FaPlus className="text-white w-6 h-6 cursor-pointer relative" />
                     </div>
-                    <div className="p-4 bg-white rounded-lg shadow-md mx-3 mt-4">
-                      <p className="text-gray-800 text-base leading-relaxed whitespace-pre-line">
-                        {soApiResponse}
-                      </p>
+                    <div className="p-4 bg-white rounded-lg shadow-md mx-3 mt-4 overflow-y-auto max-h-[50rem]">
+                    {soApiresponse.map((strategy, index) => (
+                        <div key={index} className="mb-4 border border-black p-2 rounded">
+                            <div className="flex">
+                                <FaTrashAlt className="text-red-500 mr-2 cursor-pointer" 
+                                onClick={() => deletesoStrategy(strategy.id, department_id)}/>
+                                <p className="text-gray-800 text-base leading-relaxed whitespace-pre-line">
+                                    {strategy['s-oResponses']}
+                                </p>
+                            </div>
+                        </div>
+                    ))}
                     </div>
                   </div>
                 </Card>
-                <Card className="flex align-center mb-6 shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-xl border  border-[0.1rem_solid_#807C7C] justify-between bg-white w-[45rem] h-[30rem]">
+                <Card className="flex align-center mb-6 shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-xl border  border-[0.1rem_solid_#807C7C] justify-between bg-white w-[45rem] h-[50rem]">
                   <div className="flex flex-col">
                     <div className="flex flex-row mt-4 mx-3 p-2 rounded-[0.6rem] bg-[#962203] w-[43.3rem] h-10 justify-between items-center">
                       <span className="ml-2 relative font-semibold text-[1.3rem] text-[#FFFFFF]">
@@ -1343,16 +1575,25 @@ const toggleThreatOptions = (id: any) => {
                       </span>
                       <FaPlus className="text-white w-6 h-6 cursor-pointer relative" />
                       </div>
-                        <div className="p-4 bg-white rounded-lg shadow-md mx-3 mt-4">
-                          <p className="text-gray-800 text-base leading-relaxed whitespace-pre-line">
-                            {woApiResponse}
-                          </p>
+                      <div className="p-4 bg-white rounded-lg shadow-md mx-3 mt-4 overflow-y-auto max-h-[50rem]">
+                      {woApiresponse.map((strategy, index) => (
+                        <div key={index} className="mb-4 border border-black p-2 rounded">
+                            <div className="flex">
+                                <FaTrashAlt className="text-red-500 mr-2 cursor-pointer" 
+                                onClick={() => deletewoStrategy(strategy.id, department_id)}/>
+                                <p className="text-gray-800 text-base leading-relaxed whitespace-pre-line">
+                                    {strategy['w-oResponses']}
+                                </p>
+                            </div>
+                        </div>
+                    ))}
+
                         </div>
                   </div>
                 </Card>
               </div>
               <div className="flex flex-row gap-[5rem]">
-                <Card className="flex align-center mb-6 shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-xl border  border-[0.1rem_solid_#807C7C] justify-between bg-white w-[45rem] h-[30rem]">
+                <Card className="flex align-center mb-6 shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-xl border  border-[0.1rem_solid_#807C7C] justify-between bg-white w-[45rem] h-[50rem]">
                   <div className="flex flex-col">
                     <div className="flex flex-row mt-4 mx-3 p-2 rounded-[0.6rem] bg-[#962203] w-[43.3rem] h-10 justify-between items-center">
                       <span className="ml-2 relative font-semibold text-[1.3rem] text-[#FFFFFF]">
@@ -1360,14 +1601,22 @@ const toggleThreatOptions = (id: any) => {
                       </span>
                       <FaPlus className="text-white w-6 h-6 cursor-pointer relative" />
                     </div>
-                    <div className="p-4 bg-white rounded-lg shadow-md mx-3 mt-4">
-                          <p className="text-gray-800 text-base leading-relaxed whitespace-pre-line">
-                            {stApiResponse}
-                          </p>
+                    <div className="p-4 bg-white rounded-lg shadow-md mx-3 mt-4 overflow-y-auto max-h-[50rem]">
+                    {stApiresponse.map((strategy, index) => (
+                        <div key={index} className="mb-4 border border-black p-2 rounded">
+                            <div className="flex">
+                                <FaTrashAlt className="text-red-500 mr-2 cursor-pointer" 
+                                onClick={() => deletestStrategy(strategy.id, department_id)}/>
+                                <p className="text-gray-800 text-base leading-relaxed whitespace-pre-line">
+                                    {strategy['s-tResponses']}
+                                </p>
+                            </div>
+                        </div>
+                    ))}
                     </div>
                   </div>
                 </Card>
-                <Card className="flex align-center mb-6 shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-xl border  border-[0.1rem_solid_#807C7C] justify-between bg-white w-[45rem] h-[30rem]">
+                <Card className="flex align-center mb-6 shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-xl border  border-[0.1rem_solid_#807C7C] justify-between bg-white w-[45rem] h-[50rem]">
                   <div className="flex flex-col">
                     <div className="flex flex-row mt-4 mx-3 p-2 rounded-[0.6rem] bg-[#962203] w-[43.3rem] h-10 justify-between items-center">
                       <span className="ml-2 relative font-semibold text-[1.3rem] text-[#FFFFFF]">
@@ -1375,10 +1624,19 @@ const toggleThreatOptions = (id: any) => {
                       </span>
                       <FaPlus className="text-white w-6 h-6 cursor-pointer relative" />
                     </div>
-                    <div className="p-4 bg-white rounded-lg shadow-md mx-3 mt-4">
-                          <p className="text-gray-800 text-base leading-relaxed whitespace-pre-line">
-                            {wtApiResponse}
-                          </p>
+                    <div className="p-4 bg-white rounded-lg shadow-md mx-3 mt-4 overflow-y-auto max-h-[50rem]">
+                    {wtApiresponse.map((strategy, index) => (
+                        <div key={index} className="mb-4 border border-black p-2 rounded">
+                            <div className="flex">
+                                <FaTrashAlt className="text-red-500 mr-2 cursor-pointer" 
+                                onClick={() => deleteStrategy(strategy.id, department_id)}/>
+                                <p className="text-gray-800 text-base leading-relaxed whitespace-pre-line">
+                                    {strategy['w-tResponses']}
+                                </p>
+                            </div>
+                        </div>
+                    ))}
+
                       </div>
                   </div>
                 </Card>

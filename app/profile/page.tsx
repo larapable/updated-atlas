@@ -10,7 +10,7 @@ export default function Profile() {
         <Navbar />
       </div>
       <div className="flex-1">
-        <div className="flex-1 flex flex-col mt-8 ml-80">
+        <div className="flex-1 flex flex-col mt-3 ml-80">
           <UserProfile />
         </div>
       </div>

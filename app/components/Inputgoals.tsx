@@ -1,34 +1,35 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { getSession, useSession } from "next-auth/react";
-import { useEffect } from "react";
 import { toast } from "react-toastify";
 import { Modal } from "@mui/material";
-
+ 
 export default function Inputgoals() {
-  const { data: session, status, update } = useSession();
+  const { data: session, status } = useSession();
   console.log("useSession Hook session object", session);
-
+ 
   let user;
-  if (session?.user?.name) user = JSON.parse(session?.user?.name as string);
-
-  const [isEditing, setIsEditing] = React.useState(true);
-  const [officeVision, setOfficeVision] = React.useState("");
-  const [valueProposition, setValueProposition] = React.useState("");
-  const [strategicGoals, setStrategicGoals] = React.useState("");
-  const [strategicGoals2, setStrategicGoals2] = React.useState("");
-  const [strategicGoals3, setStrategicGoals3] = React.useState("");
-  const [selectedDate, setSelectedDate] = React.useState<Date | null>(new Date());
-  const [selectedEndDate, setSelectedEndDate] = React.useState<Date | null>(null);
-
-  const [successModal, setSuccessModal] = React.useState(false);
-
+  if (session?.user?.name) user = JSON.parse(session?.user?.name);
+ 
+  const [isEditing, setIsEditing] = useState(false);
+  const [officeVision, setOfficeVision] = useState("");
+  const [valueProposition, setValueProposition] = useState("");
+  const [strategicGoals, setStrategicGoals] = useState("");
+  const [strategicGoals2, setStrategicGoals2] = useState("");
+  const [strategicGoals3, setStrategicGoals3] = useState("");
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const [selectedEndDate, setSelectedEndDate] = useState<Date | null>(null);
+  const [successModal, setSuccessModal] = useState(false);
+  const [isNew, setIsNew] = useState(true); // New state to track if adding new goals
+ 
   const handleCloseSuccessModal = () => {
     setSuccessModal(false);
   };
+ 
   const department_id = user?.department_id;
   console.log("User Parsed: ", user);
+ 
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -38,7 +39,6 @@ export default function Inputgoals() {
         }
         const data = await response.json();
         if (data.vision) {
-          // Adjust this condition based on your response structure
           setOfficeVision(data.vision);
           setValueProposition(data.proposition);
           setStrategicGoals(data.goals);
@@ -47,11 +47,9 @@ export default function Inputgoals() {
           setSelectedDate(new Date(data.startDate));
           setSelectedEndDate(new Date(data.endDate));
           setIsEditing(false);
+          setIsNew(false); // Set to false if existing data is fetched
         } else {
-          console.error(
-            "Error fetching input goals data:",
-            response.statusText
-          );
+          console.error("Error fetching input goals data:", response.statusText);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -60,71 +58,60 @@ export default function Inputgoals() {
     };
     fetchData();
   }, [department_id]);
-
-  const handleSave = async (
-    event: React.MouseEvent<HTMLButtonElement, MouseEvent>
-) => {
+ 
+  const handleSave = async (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     event.preventDefault();
-
-    // Check if any input field is empty
-    if (!officeVision || !valueProposition || !strategicGoals) {
-        alert("Please fill out all fields");
-        return;
-    }
-
-    try {
-        const response = await fetch("api/inputGoals", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                officeVision: officeVision,
-                valueProposition: valueProposition,
-                strategicGoals: strategicGoals,
-                strategicGoals2: strategicGoals2,
-                strategicGoals3: strategicGoals3,
-                selectedDate: selectedDate, // Send selectedDate as is
-                selectedEndDate: selectedEndDate, // Send selectedEndDate as is
-                department_id: department_id, // Include the user's ID
-            }),
-        });
-
-        if (response.ok) {
-            // Show success modal
-            setSuccessModal(true);
-            // Update state to keep input values and disable editing
-            setIsEditing(false);
-        } else {
-            alert("Failed to save goal setting");
-        }
-    } catch (error) {
-        console.error("Error:", error);
-    }
-};
-
-  const handleAddNew = () => {
-    // Check if any input field is empty
+ 
     if (!officeVision || !valueProposition || !strategicGoals) {
       alert("Please fill out all fields");
       return;
     }
-
-    // Clear all input fields
+ 
+    try {
+      const response = await fetch("/api/inputGoals", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          officeVision,
+          valueProposition,
+          strategicGoals,
+          strategicGoals2,
+          strategicGoals3,
+          selectedDate,
+          selectedEndDate,
+          department_id,
+          isNew, // Pass the isNew flag to the backend
+        }),
+      });
+ 
+      if (response.ok) {
+        setSuccessModal(true);
+        setIsEditing(false);
+        setIsNew(false); // Set to false after saving
+      } else {
+        alert("Failed to save goal setting");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+ 
+  const handleAddNew = () => {
     setOfficeVision("");
     setValueProposition("");
     setStrategicGoals("");
     setStrategicGoals2("");
     setStrategicGoals3("");
-    setSelectedDate(new Date()); // Set start date to default (today)
-    setSelectedEndDate(null); // Clear the target completion date
-
+    setSelectedDate(new Date());
+    setSelectedEndDate(null);
     setIsEditing(true);
+    setIsNew(true); // Set to true when adding new goals
   };
-
+ 
   const toggleEditing = async () => {
     if (isEditing) {
-      // Fetch data from the database and reset the state variables
       try {
         const response = await fetch(`../api/checkGoals/${department_id}`);
         if (!response.ok) {
@@ -140,21 +127,18 @@ export default function Inputgoals() {
           setSelectedDate(new Date(data.startDate));
           setSelectedEndDate(new Date(data.endDate));
           setIsEditing(false);
+          setIsNew(false); // Set to false if existing data is fetched
         } else {
-          console.error(
-            "Error fetching input goals data:",
-            response.statusText
-          );
+          console.error("Error fetching input goals data:", response.statusText);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
-        // Handle error, show error message to the user, etc.
       }
     } else {
       setIsEditing((prevIsEditing) => !prevIsEditing);
     }
   };
-
+ 
   return (
     <div className="flex flex-col items-center ml-28">
       <div className="ml-[-78rem] mb-5 mt-[0rem] inline-block break-words font-bold text-[3rem] text-[#000000]">
@@ -162,15 +146,12 @@ export default function Inputgoals() {
       </div>
       <div className="break-words font font-normal text-[1.3rem] text-[#504C4C] mb-10 mr-5">
         <span>
-          Goal setting involves defining specific objectives, outlining
-          actionable steps, and establishing a timeframe for achievement. It
-          provides direction and motivation for personal or professional growth
-          by creating clear targets to strive towards.
+          Goal setting involves defining specific objectives, outlining actionable steps, and establishing a timeframe for achievement. It provides direction and motivation for personal or professional growth by creating clear targets to strive towards.
         </span>
       </div>
       <div>
         <div className="ml-[-1rem] mb-10">
-          <div className="flex flex-col ml-52">
+          <div className="flex flex-col ml-[-3rem]">
             <div className="flex flex-row justify-between w-[38rem] mb-3">
               <span className="m-[0_0.8rem_0_0] ml-[-12rem] w-[31.4rem] break-words font-semibold text-[1.3rem] text-[#000000]">
                 Start Date
@@ -185,158 +166,149 @@ export default function Inputgoals() {
                   selected={selectedDate}
                   onChange={(date: Date | null) => {
                     let today = new Date();
-                    let startOfDay = new Date(
-                      today.getFullYear(),
-                      today.getMonth(),
-                      today.getDate()
-                    );
+                    let startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
                     if (date && date < startOfDay) {
-                      // If selected date is in the past, don't update selectedDate
                       toast.error("Please select a future or today's date.");
                     } else {
                       setSelectedDate(date);
+                      if (selectedEndDate && date && selectedEndDate < date) {
+                        setSelectedEndDate(null);
+                      }
                     }
                   }}
-                  minDate={new Date()} // Set minDate to today's date
+                  minDate={new Date()}
                   dateFormat="yyyy/MM/dd"
                   placeholderText="YYYY/MM/DD"
-                  className="break-words font-normal text-[0.9rem] text-[#807C7C] cursor-pointer w-[26.5rem] focus:outline-none"
+                  className={`break-words font-normal text-[0.9rem] text-[#807C7C] cursor-pointer w-[26.5rem] focus:outline-none ${!isEditing && !isNew ? "pointer-events-none opacity-50" : ""}`}
+                  disabled={!isEditing && !isNew}
                 />
               </div>
               <div className="rounded-[0.6rem] shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.10)] border-[0.1rem_solid_#807C7C] bg-[#FFFFFF] relative p-[0.9rem_1.1rem_0.8rem_1.1rem] w-[28.8rem] box-sizing-border">
                 <DatePicker
                   selected={selectedEndDate}
                   onChange={(date: Date | null) => {
-                    setSelectedEndDate(date); // Allow the user to choose any date
+                    if (date && selectedDate && date < selectedDate) {
+                      toast.error("End date cannot be before start date.");
+                    } else {
+                      setSelectedEndDate(date);
+                    }
                   }}
-                  minDate={new Date()} // Set minDate to today's date
+                  minDate={selectedDate || new Date()}
                   dateFormat="yyyy/MM/dd"
                   placeholderText="YYYY/MM/DD"
-                  className="break-words font-normal text-[0.9rem] text-[#807C7C] cursor-pointer w-[26.5rem] focus:outline-none"
+                  className={`break-words font-normal text-[0.9rem] text-[#807C7C] cursor-pointer w-[26.5rem] focus:outline-none ${!isEditing && !isNew ? "pointer-events-none opacity-50" : ""}`}
+                  disabled={!isEditing && !isNew}
                 />
               </div>
             </div>
           </div>
         </div>
-        <div className="flex flex-col">
-          <div className="m-[0_41.8rem_0.4rem_0] flex flex-row w-[fit-content] box-sizing-border">
-            <span className="m-[0_0.3rem_0_0] break-words font-semibold text-[1.3rem] text-[#000000]">
-              Office Vision
-            </span>
-            <div className="m-[0.2rem_0_0.2rem_0] inline-block break-words font-semibold text-[0.9rem] text-[#DD1414]">
-              *
+        <div className="w-[65rem] mb-10">
+          <div className="flex flex-col ml-[-16rem]">
+            <div className="m-[0_41.8rem_0.4rem_0] flex flex-row w-[fit-content] box-sizing-border">
+              <span className="m-[0_0.3rem_0_0] break-words font-semibold text-[1.3rem] text-[#000000]">
+                Office Vision
+              </span>
+              <div className="m-[0.2rem_0_0.2rem_0] inline-block break-words font-semibold text-[0.9rem] text-[#DD1414]">
+                *
+              </div>
+            </div>
+            <div className="relative m-[0_23.7rem_0.7rem_0] inline-block break-words font-normal text-[1rem] text-[#807C7C]">
+              A brief statement articulating the company's long-term goals and values.
             </div>
           </div>
-          <div className="relative m-[0_23.7rem_0.7rem_0] inline-block break-words font-normal text-[1rem] text-[#807C7C]">
-            A brief statement articulating the company&#39;s long-term goals and
-            values.
-          </div>
-        </div>
-        <textarea
-          value={officeVision}
-          onChange={(e) => setOfficeVision(e.target.value)}
-          disabled={!isEditing}
-          className={`mx-auto rounded-[0.6rem] border-[0.1rem_solid_#807C7C] 
-        bg-[#FFFFFF] relative m-[0_3.1rem_1.6rem_3.1rem] self-end w-[94rem] h-[8rem] p-2 shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.10)]
-          ${!isEditing ? "bg-gray-300" : ""}`}
-        />
-        <div className="flex flex-col">
-          <div className="m-[0_38.8rem_0.4rem_0] flex flex-row w-[fit-content] box-sizing-border">
-            <span className="m-[0_0.5rem_0_0] break-words font-semibold text-[1.3rem] text-[#000000]">
-              Value Proposition
-            </span>
-            <div className="m-[0.1rem_0_0.3rem_0] inline-block break-words font-semibold text-[0.9rem] text-[#DD1414]">
-              *
+ 
+          <textarea
+            className={`rounded-[0.9rem] ml-[-16rem] w-[95rem] h-[8.3rem] ${!isEditing && !isNew ? "bg-gray-300" : ""
+              } relative pt-[0.7rem] pr-[4.2rem] pb-[2.1rem] pl-[1.1rem] shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.10)] border-[0.1rem_solid_#807C7C] resize-none overflow-hidden box-sizing-border break-words font-normal text-[0.9rem] text-[#504C4C]`}
+            value={officeVision}
+            onChange={(event) => setOfficeVision(event.target.value)}
+            disabled={!isEditing && !isNew}
+          ></textarea>
+ 
+          <div className="flex flex-col ml-[-16rem]">
+            <div className="m-[0_38.8rem_0.4rem_0] flex flex-row w-[fit-content] box-sizing-border">
+              <span className="m-[0_0.5rem_0_0] break-words font-semibold text-[1.3rem] text-[#000000]">
+                Value Proposition
+              </span>
+              <div className="m-[0.1rem_0_0.3rem_0] inline-block break-words font-semibold text-[0.9rem] text-[#DD1414]">
+                *
+              </div>
+            </div>
+            <div className="m-[0_14.8rem_0.8rem_0] inline-block break-words font-normal text-[1rem] text-[#807C7C]">
+              A concise statement that communicates the unique benefits and advantages of your service.
             </div>
           </div>
-          <div className="m-[0_14.8rem_0.8rem_0] inline-block break-words font-normal text-[1rem] text-[#807C7C]">
-            A concise statement that communicates the unique benefits and
-            advantages of your service.
+ 
+          <textarea
+            className={`rounded-[0.9rem] ml-[-16rem] w-[95rem] h-[8.3rem] ${!isEditing && !isNew ? "bg-gray-300" : ""
+              } relative pt-[0.7rem] pr-[4.2rem] pb-[2.1rem] pl-[1.1rem] shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.10)] border-[0.1rem_solid_#807C4C] resize-none overflow-hidden box-sizing-border break-words font-normal text-[0.9rem] text-[#504C4C]`}
+            value={valueProposition}
+            onChange={(event) => setValueProposition(event.target.value)}
+            disabled={!isEditing && !isNew}
+          ></textarea>
+ 
+          <div className="flex flex-col ml-[-16rem]">
+            <div className="m-[0_41.1rem_0.5rem_0] inline-block break-words font-semibold text-[1.3rem] text-[#000000]">
+              Strategic Goals
+            </div>
+            <div className="m-[0_12.7rem_0.6rem_0] inline-block break-words font-normal text-[1rem] text-[#807C7C]">
+              A guiding principles for decision-making, driving the organization towards its desired future state.
+            </div>
           </div>
+ 
+          <textarea
+            className={`rounded-[0.9rem] ml-[-16rem] mb-5 w-[95rem] h-[8.3rem] ${!isEditing && !isNew ? "bg-gray-300" : ""
+              } relative pt-[0.7rem] pr-[4.2rem] pb-[2.1rem] pl-[1.1rem] shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.10)] border-[0.1rem_solid_#807C4C] resize-none overflow-hidden box-sizing-border break-words font-normal text-[0.9rem] text-[#504C4C]`}
+            value={strategicGoals}
+            onChange={(event) => setStrategicGoals(event.target.value)}
+            disabled={!isEditing && !isNew}
+          ></textarea>
+ 
+          <textarea
+            className={`rounded-[0.9rem] ml-[-16rem] mb-5 w-[95rem] h-[8.3rem] ${!isEditing && !isNew ? "bg-gray-300" : ""
+              } relative pt-[0.7rem] pr-[4.2rem] pb-[2.1rem] pl-[1.1rem] shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.10)] border-[0.1rem_solid_#807C4C] resize-none overflow-hidden box-sizing-border break-words font-normal text-[0.9rem] text-[#504C4C]`}
+            value={strategicGoals2}
+            onChange={(event) => setStrategicGoals2(event.target.value)}
+            disabled={!isEditing && !isNew}
+          ></textarea>
+ 
+          <textarea
+            className={`rounded-[0.9rem] ml-[-16rem] mb-5 w-[95rem] h-[8.3rem] ${!isEditing && !isNew ? "bg-gray-300" : ""
+              } relative pt-[0.7rem] pr-[4.2rem] pb-[2.1rem] pl-[1.1rem] shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.10)] border-[0.1rem_solid_#807C4C] resize-none overflow-hidden box-sizing-border break-words font-normal text-[0.9rem] text-[#504C4C]`}
+            value={strategicGoals3}
+            onChange={(event) => setStrategicGoals3(event.target.value)}
+            disabled={!isEditing && !isNew}
+          ></textarea>
+          {/* Remaining textarea elements */}
         </div>
-
-        <textarea
-          value={valueProposition}
-          onChange={(e) => setValueProposition(e.target.value)}
-          disabled={!isEditing}
-          className={`mx-auto rounded-[0.6rem] border-[0.1rem_solid_#807C7C] 
-        bg-[#FFFFFF] relative m-[0_3.1rem_1.6rem_3.1rem] self-end w-[94rem] h-[8rem] p-2 shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.10)]
-         ${!isEditing ? "bg-gray-300" : ""}`}
-        ></textarea>
-
-        <div className="flex flex-col">
-          <div className="m-[0_41.1rem_0.5rem_0] inline-block break-words font-semibold text-[1.3rem] text-[#000000]">
-            Strategic Goals
-          </div>
-          <div className="m-[0_12.7rem_0.6rem_0] inline-block break-words font-normal text-[1rem] text-[#807C7C]">
-            A guiding principles for decision-making, driving the organization
-            towards its desired future state.
-          </div>
-        </div>
-
-        <textarea
-          value={strategicGoals}
-          onChange={(e) => setStrategicGoals(e.target.value)}
-          disabled={!isEditing}
-          className={`mx-auto rounded-[0.6rem] border-[0.1rem_solid_#807C7C]
-        bg-[#FFFFFF] relative m-[0_3.1rem_1.6rem_3.1rem] self-end w-[94rem] h-[8rem] p-2 shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.10)]
-          ${!isEditing ? "bg-gray-300" : ""} `}
-        ></textarea>
-
-        <textarea
-          value={strategicGoals2}
-          onChange={(e) => setStrategicGoals2(e.target.value)}
-          disabled={!isEditing}
-          className={`mx-auto rounded-[0.6rem] border-[0.1rem_solid_#807C7C]
-          bg-[#FFFFFF] relative m-[0_3.1rem_1.6rem_3.1rem] self-end w-[94rem] h-[8rem] p-2 shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.10)]
-          ${!isEditing ? "bg-gray-300" : ""}`}
-        ></textarea>
-
-        <textarea
-          value={strategicGoals3}
-          onChange={(e) => setStrategicGoals3(e.target.value)}
-          disabled={!isEditing}
-          className={`mx-auto rounded-[0.6rem] border-[0.1rem_solid_#807C7C]
-          bg-[#FFFFFF] relative m-[0_3.1rem_1.6rem_3.1rem] self-end w-[94rem] h-[8rem] p-2 shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.10)]
-          ${!isEditing ? "bg-gray-300" : ""}`}
-        ></textarea>
       </div>
-
-      <div className="m-[0_0_0_10.3rem] ml-[-2rem] mb-20 flex flex-row">
-        {isEditing ? (
-          // saves the newly added text
+ 
+      <div className="flex flex-row justify-center w-[70rem] mb-20">
+        <div className="flex space-x-10 ">
           <button
-            onClick={handleSave}
-            disabled={
-              !isEditing ||
-              !(officeVision && valueProposition && strategicGoals)
-            }
-            className="rounded-[0.6rem] bg-[#FAD655] relative m-[0_2.9rem_0_0] flex flex-row justify-center p-[0.8rem_0.1rem_0.8rem_0] w-[11.4rem] box-sizing-border hover:bg-[#FFFFFF] shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.10)]"
+            className="break-words font-semibold text-[1.2rem] text-[#962203] border-none rounded-[0.6rem] pt-[0.5rem] pb-[0.5rem] pr-[2.2rem] pl-[2.2rem] bg-[#FAD655] cursor-pointer"
+            onClick={toggleEditing}
           >
-            <span className="break-words font-semibold text-[1.3rem] text-[#962203]">
-              Save
-            </span>
-          </button>
-        ) : (
-          // saves the edited text
-          <button
-            onClick={handleAddNew}
-            className="rounded-[0.6rem] bg-[#FAD655] relative m-[0_2.9rem_0_0] flex flex-row justify-center p-[0.8rem_0.1rem_0.8rem_0] w-[11.4rem] box-sizing-border hover:bg-[#FFFFFF] shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.10)]"
-          >
-            <span className="break-words font-semibold text-[1.3rem] text-[#962203]">
-              Add New Goals
-            </span>
-          </button>
-        )}
-        <button
-          onClick={toggleEditing}
-          className="rounded-[0.6rem] bg-[#FAD655] relative m-[0_2.9rem_0_0] flex flex-row justify-center p-[0.8rem_0.1rem_0.8rem_0] w-[11.4rem] box-sizing-border hover:bg-[#FFFFFF] shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.10)]"
-        >
-          <span className="break-words font-semibold text-[1.3rem] text-[#962203]">
             {isEditing ? "Cancel" : "Edit"}
-          </span>
-        </button>
+          </button>
+          <button
+            className="break-words font-semibold text-[1.2rem] text-[#962203] border-none rounded-[0.6rem] pt-[0.5rem] pb-[0.5rem] pr-[2.2rem] pl-[2.2rem] bg-[#FAD655] cursor-pointer"
+            onClick={handleAddNew}
+          >
+            Add New Goals
+          </button>
+          <button
+            className="break-words font-semibold text-[1.2rem] text-[#962203] border-none rounded-[0.6rem] pt-[0.5rem] pb-[0.5rem] pr-[2.2rem] pl-[2.2rem] bg-[#FAD655] cursor-pointer"
+            onClick={handleSave}
+          >
+            Save
+          </button>
+        </div>
       </div>
+ 
+ 
+ 
       <Modal
         open={successModal}
         onClose={handleCloseSuccessModal}
@@ -344,7 +316,7 @@ export default function Inputgoals() {
         aria-describedby="success-modal-description"
       >
         <div className="flex flex-col items-center justify-center h-full">
-          <div className=" bg-white p-8 rounded-lg shadow-md h-72 w-[40rem] text-center relative">
+          <div className=" bg-white p-8 rounded-lg shadow-md h-70 w-[35rem] text-center relative">
             <button
               onClick={handleCloseSuccessModal}
               className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"

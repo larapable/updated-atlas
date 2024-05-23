@@ -3,23 +3,18 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-
-interface FinancialDataItem {
-  id: number;
-  input: string;
-  department_id: number;
-}
+import { toast } from "react-toastify";
 
 interface FinancialScorecard {
   id: number;
-  targetCode: string;
-  startDate: Date;
-  targetCompletionDate: Date;
-  officeTarget: string;
+  target_code: string;
+  start_date: Date;
+  completion_date: Date;
+  office_target: string;
   status: string;
-  kpi: string;
-  targetPerformance: string;
-  actualPerformance: string;
+  key_performance_indicator: string;
+  target_performance: string;
+  actual_performance: string;
 }
 export default function Financial() {
   const { data: session, status, update } = useSession();
@@ -44,8 +39,10 @@ export default function Financial() {
     useState("");
   const [financialActualPerformance, setFinancialActualPerformance] =
     useState("");
+
   const [financialLevelOfAttainment, setFinancialLevelOfAttainment] =
     useState("");
+
   const [financialSavedScorecards, setFinancialSavedScorecards] = useState<
     FinancialScorecard[]
   >([]);
@@ -56,9 +53,19 @@ export default function Financial() {
 
   const handleFinancialCloseModal = () => {
     setFinancialModalOpen(false);
+    setFinancialEditMode(null); // Reset edit mode
   };
+
   // mo add ug scorecard : open modal
   const handleFinancialAddMoreScorecard = () => {
+    setFinancialTargetCode("");
+    setFinancialStartDate(null);
+    setFinancialTargetCompletionDate(null);
+    setFinancialOfficeTarget("");
+    setFinancialStatus("");
+    setFinancialKPI("");
+    setFinancialTargetPerformance("");
+    setFinancialActualPerformance("");
     setFinancialEditMode(null);
     setFinancialModalOpen(true);
   };
@@ -78,13 +85,28 @@ export default function Financial() {
   const handleFinancialActualPerformanceChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const newActualPerformanceFinancial = parseFloat(e.target.value); // Parse the input value to a number
-    setFinancialActualPerformance(newActualPerformanceFinancial.toString()); // Update the state with the parsed value
-    const newLevelOfAttainmentFinancial = calculateFinancialLevelOfAttainment(
-      newActualPerformanceFinancial,
-      parseFloat(financialTargetPerformance)
-    );
-    setFinancialLevelOfAttainment(newLevelOfAttainmentFinancial.toString());
+    const value = e.target.value;
+    // Allow backspace to clear the input
+    if (value === "") {
+      setFinancialActualPerformance("");
+      setFinancialLevelOfAttainment("0%");
+    } else {
+      const newActualPerformance = parseFloat(value);
+      // Check if the value is a number and not NaN
+      if (!isNaN(newActualPerformance) && newActualPerformance <= 100) {
+        setFinancialActualPerformance(newActualPerformance.toString());
+        // Assuming financialTargetPerformance is already set from the database
+        const targetPerformance = parseFloat(financialTargetPerformance);
+        if (targetPerformance > 0) {
+          // Make sure not to divide by zero
+          const newLevelOfAttainment = calculateFinancialLevelOfAttainment(
+            newActualPerformance,
+            targetPerformance
+          );
+          setFinancialLevelOfAttainment(newLevelOfAttainment);
+        }
+      }
+    }
   };
 
   // Save Financial Inputs
@@ -98,15 +120,19 @@ export default function Financial() {
       !financialTargetPerformance ||
       !financialStatus ||
       !financialKPI ||
-      !financialActualPerformance
+      !financialActualPerformance ||
+      parseFloat(financialTargetPerformance) > 100 ||
+      parseFloat(financialActualPerformance) > 100
     ) {
-      alert("Please fill in all fields.");
+      toast.error(
+        "Please fill in all fields and ensure performance values do not exceed 100."
+      );
       return;
     }
 
     try {
       // Send the POST request to the server
-      const response = await fetch("/api/financial", {
+      const response = await fetch("/api/financialBSC", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -132,9 +158,18 @@ export default function Financial() {
         console.log("Financial scorecard data submitted successfully:", result);
         // Perform any success actions, like state updates or alerts
         // Update the state to include the new scorecard
-        setFinancialSavedScorecards([...financialSavedScorecards, result.data]);
+        const newScorecard = { ...result.data };
+        setFinancialSavedScorecards((prevScorecards) => [
+          ...prevScorecards,
+          newScorecard,
+        ]);
+        // Set the edit mode to the new scorecard's ID
+        setFinancialEditMode(newScorecard.id);
+        // Close the modal after saving
+        setFinancialModalOpen(false);
+        window.location.reload();
       } else {
-        console.error(
+        toast.error(
           "Failed to submit financial scorecard data:",
           result.message
         );
@@ -146,46 +181,170 @@ export default function Financial() {
     }
 
     // Reset modal state for the next input
-    setFinancialModalOpen(false);
+    setFinancialModalOpen(false); // Close the modal
+    setFinancialEditMode(null); // Exit edit mode
+    setFinancialTargetCode("");
+    setFinancialStartDate(null);
+    setFinancialTargetCompletionDate(null);
+    setFinancialOfficeTarget("");
+    setFinancialTargetPerformance("");
+    setFinancialStatus("");
+    setFinancialKPI("");
+    setFinancialActualPerformance("");
   };
 
-  const [financialData, setFinancialData] = useState<FinancialDataItem[]>([]);
+  // Function to update an existing scorecard
+  const handleFinancialUpdateScorecard = async () => {
+    if (!financialEditMode) return; // Exit if not in edit mode
 
+    try {
+      const response = await fetch(`/api/financialBSC/${financialEditMode}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: financialEditMode, // Include the ID of the scorecard to update
+          target_code: financialTargetCode,
+          office_target: financialOfficeTarget,
+          start_date: financialStartDate,
+          completion_date: financialTargetCompletionDate,
+          status: financialStatus,
+          key_performance_indicator: financialKPI,
+          target_performance: financialTargetPerformance,
+          actual_performance: financialActualPerformance,
+        }),
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        const updatedScorecard = result.data;
+        setFinancialSavedScorecards((prevScorecards) =>
+          prevScorecards.map((scorecard) =>
+            scorecard.id === financialEditMode ? updatedScorecard : scorecard
+          )
+        );
+        toast.success("Scorecard updated successfully!");
+      } else {
+        toast.error(`Failed to update scorecard: ${result.message}`);
+      }
+    } catch (error) {
+      toast.error("Error updating scorecard. Please try again.");
+    }
+
+    // Reset modal state after update
+    setFinancialModalOpen(false);
+    setFinancialEditMode(null);
+    // Reset other form states
+    setFinancialTargetCode("");
+    setFinancialStartDate(null);
+    setFinancialTargetCompletionDate(null);
+    setFinancialOfficeTarget("");
+    setFinancialTargetPerformance("");
+    setFinancialStatus("");
+    setFinancialKPI("");
+    setFinancialActualPerformance("");
+  };
+
+  // Determine which function to call when the save button is clicked
+  const handleSaveButtonClick = () => {
+    if (financialEditMode) {
+      // If we're in edit mode, update the existing scorecard
+      handleFinancialUpdateScorecard();
+    } else {
+      // If we're not in edit mode, save as a new scorecard
+      handleFinancialSaveScorecard();
+    }
+  };
+
+  // Fetch the saved financial scorecards from the server
   useEffect(() => {
-    const fetchFinancialData = async () => {
+    const fetchFinancialScorecards = async () => {
+      if (!department_id) {
+        console.log("Department ID is not available yet.");
+        return;
+      }
+
       try {
-        const response = await fetch(`../api/getFinancialBSC/${department_id}`);
+        const response = await fetch(
+          `../api/getFinancialScorecard/${department_id}`
+        );
         if (!response.ok) {
-          throw new Error("Failed to fetch financial data");
+          throw new Error("Failed to fetch financial scorecards");
         }
         const data = await response.json();
-        setFinancialData(data.financial_entity);
+        setFinancialSavedScorecards(data.financial_bsc);
       } catch (error) {
-        console.error("Error fetching financial data:", error);
+        console.error("Error fetching financial scorecards:", error);
       }
     };
 
-    fetchFinancialData();
+    fetchFinancialScorecards();
   }, [department_id]);
 
-  // edit sa financial scorecard to be implemented by Arziel
-  // const handleFinancialEditScorecard = (index: number) => {
-  //   const FinancialScorecardData = financialSavedScorecards[index]
-  //     .split(" ")
-  //     .map((item) => item.trim());
-  //   setFinancialTargetCode(FinancialScorecardData[0]);
-  //   setFinancialStartDate(new Date(FinancialScorecardData[1]));
-  //   setFinancialTargetCompletionDate(new Date(FinancialScorecardData[2]));
-  //   setFinancialOfficeTarget(FinancialScorecardData[3]);
-  //   setFinancialTargetPerformance(FinancialScorecardData[4]);
-  //   setFinancialStatus(FinancialScorecardData[5]);
-  //   setFinancialKPI(FinancialScorecardData[6]);
-  //   setFinancialActualPerformance(FinancialScorecardData[7]);
-  //   setFinancialLevelOfAttainment(FinancialScorecardData[8]);
+  const handleStartDateChange = (date: Date | null) => {
+    console.log("Selected Start Date", date);
+    if (date) {
+      // Convert the selected date to UTC before saving it
+      const utcDate = new Date(
+        Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+      );
+      setFinancialStartDate(utcDate);
+    } else {
+      setFinancialStartDate(null);
+    }
+  };
 
-  //   setFinancialModalOpen(true);
-  //   setFinancialEditMode(index);
-  // };
+  const handleCompletionDateChange = (date: Date | null) => {
+    console.log("Selected Completion Date", date);
+    if (date) {
+      // Convert the selected date to UTC before saving it
+      const utcDate = new Date(
+        Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+      );
+      setFinancialTargetCompletionDate(utcDate);
+    } else {
+      setFinancialTargetCompletionDate(null);
+    }
+  };
+
+  const handleFinancialEditScorecard = (id: number) => {
+    const scorecardToEdit = financialSavedScorecards.find(
+      (scorecard) => scorecard.id === id
+    );
+    if (scorecardToEdit) {
+      // Convert the start date and completion date to the local timezone before setting them
+      const startDate = new Date(scorecardToEdit.start_date);
+      startDate.setMinutes(
+        startDate.getMinutes() - startDate.getTimezoneOffset()
+      );
+      setFinancialStartDate(startDate);
+
+      const completionDate = new Date(scorecardToEdit.completion_date);
+      completionDate.setMinutes(
+        completionDate.getMinutes() - completionDate.getTimezoneOffset()
+      );
+      setFinancialTargetCompletionDate(completionDate);
+
+      // Set the other fields
+      setFinancialTargetCode(scorecardToEdit.target_code);
+      setFinancialOfficeTarget(scorecardToEdit.office_target);
+      setFinancialTargetPerformance(scorecardToEdit.target_performance);
+      setFinancialStatus(scorecardToEdit.status);
+      setFinancialKPI(scorecardToEdit.key_performance_indicator);
+      setFinancialActualPerformance(scorecardToEdit.actual_performance);
+      setFinancialLevelOfAttainment(
+        calculateFinancialLevelOfAttainment(
+          parseFloat(scorecardToEdit.actual_performance),
+          parseFloat(scorecardToEdit.target_performance)
+        )
+      );
+
+      // Open the modal and enter edit mode
+      setFinancialEditMode(id);
+      setFinancialModalOpen(true);
+    }
+  };
 
   return (
     <div className="flex flex-col">
@@ -219,29 +378,27 @@ export default function Financial() {
         {/* Other perspective toggles */}
       </div>
       <div className="bg-[#ffffff] gap-2 w-[100%] h-[100%] flex flex-col pt-4 pr-3 pb-6 box-sizing-border rounded-lg border border-yellow-500 overflow-y-auto overflow-x-hidden">
-        {financialData &&
-          financialData.length > 0 &&
-          financialData.map((item) => {
-            const parsedLevelOfAttainment = parseFloat(
-              financialLevelOfAttainment
-            ); // Convert to a number
+        {financialSavedScorecards &&
+          financialSavedScorecards.length > 0 &&
+          financialSavedScorecards.map((item) => {
+            const levelOfAttainment = calculateFinancialLevelOfAttainment(
+              parseFloat(item.actual_performance),
+              parseFloat(item.target_performance)
+            );
 
-            // Validate and limit the values to the range of 1-100
-            const validatedTargetPerformance = Math.min(
-              Math.max(parseInt(financialTargetPerformance), 1),
-              100
-            );
-            const validatedActualPerformance = Math.min(
-              Math.max(parseInt(financialActualPerformance), 1),
-              100
-            );
+            // Validate the level of attainment to be between 1 and 100
             const validatedLevelOfAttainment = Math.min(
-              Math.max(parseFloat(financialLevelOfAttainment), 1),
+              Math.max(parseFloat(levelOfAttainment), 1),
               100
             );
 
             const progressColor =
-              validatedLevelOfAttainment >= 50 ? "bg-green-500" : "bg-red-500";
+              parseFloat(levelOfAttainment) >= 100
+                ? "bg-green-600" // A darker shade of green to indicate full completion
+                : parseFloat(levelOfAttainment) >= 50
+                ? "bg-green-500"
+                : "bg-red-500";
+
             const progressBarWidth = `${
               (validatedLevelOfAttainment / 100) * 20
             }rem`; // Adjust the width of the progress bar
@@ -249,25 +406,28 @@ export default function Financial() {
             return (
               <div
                 key={item.id}
-                className="bg-[#ffffff] relative ml-2 flex flex-row pt-4 pb-4 w-[100rem] h-auto box-sizing-border"
+                className="bg-[#ffffff] relative ml-2 flex flex-row pt-4 pb-4 w-[90rem] h-auto box-sizing-border"
               >
                 <div className="mr-5 gap-10">
                   <p className="flex flex-row">
-                    <div className="w-[57rem] flex flex-row">
+                    <div className="w-[45rem] flex flex-row">
                       <span className="font-bold bg-yellow-200 pt-2 pb-2 pr-1 pl-2 text-[#962203] mt-[-0.5rem] mr-3 ml-1">
-                        {item.id}:{" "}
+                        {item.target_code || "N/A"}:
                       </span>
                       <span className="font-regular">
-                        {item.input.length > 60
-                          ? `${item.input.substring(0, 60)}...`
-                          : item.input}{" "}
+                        {financialOfficeTarget.length > 60
+                          ? `${(item.office_target || "N/A").substring(
+                              0,
+                              60
+                            )}...`
+                          : item.office_target || "N/A"}{" "}
                       </span>
                     </div>
                     <div className="flex items-center w-[35rem]">
                       <span className="font-regular mr-5 ml-10">
-                        {financialTargetCompletionDate
-                          ? financialTargetCompletionDate.toLocaleDateString()
-                          : ""}
+                        {item.completion_date
+                          ? new Date(item.completion_date).toLocaleDateString()
+                          : "N/A"}
                       </span>
                       <div
                         className={`h-5 ${progressColor}`}
@@ -279,12 +439,12 @@ export default function Financial() {
                         {validatedLevelOfAttainment}%{" "}
                       </span>
                       <div className="font-bold border rounded-lg bg-yellow-200 border-yellow-500 pt-1 pr-2 pl-2 ml-5 mt-[-0.5rem]  ">
-                        {financialStatus}{" "}
+                        {item.status || "N/A"}{" "}
                       </div>
                     </div>
                   </p>
                 </div>
-                <button /*onClick={() => handleFinancialEditScorecard(index)}*/>
+                <button onClick={() => handleFinancialEditScorecard(item.id)}>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
@@ -349,10 +509,11 @@ export default function Financial() {
                   Start Date
                 </span>
                 <DatePicker
+                  key={financialStartDate?.toString()}
                   selected={financialStartDate}
-                  onChange={(date) => setFinancialStartDate(date)}
+                  onChange={handleStartDateChange}
                   minDate={new Date()}
-                  placeholderText="YYYY-MM-DD"
+                  placeholderText="MM-DD-YYYY"
                   className="border border-gray-300 px-3 py-2 mt-1 rounded-lg w-[25rem]"
                 />
               </div>
@@ -361,10 +522,11 @@ export default function Financial() {
                   Target Completion Date
                 </span>
                 <DatePicker
+                  key={financialTargetCompletionDate?.toString()}
                   selected={financialTargetCompletionDate}
-                  onChange={(date) => setFinancialTargetCompletionDate(date)}
+                  onChange={handleCompletionDateChange}
                   minDate={new Date()}
-                  placeholderText="YYYY-MM-DD"
+                  placeholderText="MM-DD-YYYY"
                   className="border border-gray-300 px-3 py-2 mt-1 rounded-lg w-[25rem]"
                 />
               </div>
@@ -453,10 +615,16 @@ export default function Financial() {
             </div>
             <div className="flex flex-row justify-center mt-10 gap-10">
               <button
-                onClick={handleFinancialSaveScorecard}
+                onClick={handleSaveButtonClick}
                 className="bg-[#FAD655] text-[#962203] font-semibold hover:bg-white border hover:border-yellow-500 px-4 py-2 mt-4 rounded-lg w-40"
               >
                 {financialEditMode ? "Edit" : "Save"}
+              </button>
+              <button
+                onClick={handleFinancialCloseModal}
+                className="bg-[#FAD655] text-[#962203] font-semibold hover:bg-white border hover:border-yellow-500 px-4 py-2 mt-4 rounded-lg w-40"
+              >
+                Cancel
               </button>
             </div>
           </div>

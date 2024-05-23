@@ -574,7 +574,7 @@ export default function Stakeholder() {
                 </span>
                 <span className="mr-3 break-words font-regular italic text-sm text-[#2c2c2c]">
                   Please enter the target performance as a percentage without
-                  including the '%' symbol.
+                  including the &apos;%&apos; symbol.
                 </span>
                 <input
                   type="number"
@@ -594,7 +594,7 @@ export default function Stakeholder() {
                 </span>
                 <span className="mr-3 break-words font-regular italic text-sm text-[#2c2c2c]">
                   Please enter the actual performance as a percentage without
-                  including the '%' symbol.
+                  including the &apos;%&apos; symbol.
                 </span>
                 <input
                   type="number"

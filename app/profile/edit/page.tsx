@@ -1,5 +1,4 @@
 "use client";
-import UserHeader from "@/app/components/UserHeader";
 import Navbar from "@/app/components/Navbar";
 import UserEditProfile from "@/app/components/EditProfile";
 

@@ -214,7 +214,7 @@ export default function Inputgoals() {
               </div>
             </div>
             <div className="relative m-[0_23.7rem_0.7rem_0] inline-block break-words font-normal text-[1rem] text-[#807C7C]">
-              A brief statement articulating the company's long-term goals and values.
+              A brief statement articulating the company&apos;s long-term goals and values.
             </div>
           </div>
  

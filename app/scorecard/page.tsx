@@ -62,7 +62,7 @@ const ScorecardPage = () => {
         </div>
         <div className="break-words font font-normal text-[1.3rem] text-[#504C4C] mb-10">
           Explore the Balanced Scorecard feature to gain a comprehensive view of
-          your organization's performance across different dimensions. Use it to
+          your organization&apos;s performance across different dimensions. Use it to
           set clear objectives, track progress, and drive strategic initiatives
           for success.
         </div>

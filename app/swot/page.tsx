@@ -3,7 +3,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import Navbar from "../components/Navbar";
-import UserHeader from "../components/UserHeader";
 import { FaPlus } from "react-icons/fa";
 import { FaEdit, FaTrashAlt } from 'react-icons/fa';
 import Card from '@mui/material/Card';

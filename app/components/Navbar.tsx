@@ -5,13 +5,13 @@ import { TiLocationArrowOutline } from "react-icons/ti";
 
 export default function Navbar() {
   return (
-    <div className="fixed top-0 left-0 flex flex-col h-screen w-[18rem] py-5 overflow-auto gap-2"
-    style={{
-      backgroundImage: `url('bgimagemaroon.png')`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat',
-    }}
+    <div className="fixed top-0 left-0 flex flex-col bg-[#8a252c] h-screen w-[18rem] py-5 overflow-auto gap-2"
+    // style={{
+    //   backgroundImage: `url('bgimagemaroon.png')`,
+    //   backgroundSize: 'cover',
+    //   backgroundPosition: 'center',
+    //   backgroundRepeat: 'no-repeat',
+    // }}
     >
       <div className="flex items-center justify-center">
         {/* ilisi nig atlasLogo  */}

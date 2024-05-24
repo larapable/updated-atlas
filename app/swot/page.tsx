@@ -1523,8 +1523,8 @@ const [isModalVisible, setModalVisible] = useState(false);
 
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
                   <div className="bg-white p-8 rounded-lg z-10 h-[15rem] w-[30rem]">
-                    <p className="text-2xl mb-4 justify-center font-semibold mt-20">Strategies Successfully Generated</p>
-                    <div className="justify-center align-middle items-center">
+                    <p className="text-2xl mb-4 justify-center font-semibold mt-10">Strategies Successfully Generated</p>
+                    <div className="justify-center align-middle items-center ml-20">
                     <button
                       onClick={closeModal}
                       className="shadow-[0rem_0.3rem_0.3rem_0rem_rgba(0,0,0,0.25)] rounded-[0.6rem] bg-[#FAD655] text-[#8A252C] break-words font-semibold text-lg relative flex pt-2 pr-3 pl-6 pb-2 w-36 h-[fit-content] mx-10 mb-2 mt-16 hover:bg-[#8a252c] hover:text-[#ffffff] items-center justify-center align-middle"

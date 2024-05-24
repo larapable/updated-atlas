@@ -17,7 +17,7 @@ const LearningGrowthEntity = {
   async getByDepartmentId(department_id) {
     try {
       return await excuteQuery({
-        query: "SELECT * FROM learning_growth_entity WHERE department_id = ?",
+        query: "SELECT * FROM learning_bsc WHERE department_id = ?",
         values: [department_id],
       });
     } catch (error) {
@@ -29,7 +29,7 @@ const LearningGrowthEntity = {
   async editLGEntity(id, input) {
     try {
       const result = await excuteQuery({
-        query: "UPDATE learning_growth_entity SET input = ? WHERE id = ?",
+        query: "UPDATE learning_bsc SET input = ? WHERE id = ?",
         values: [input, id],
       });
 
@@ -47,7 +47,7 @@ const LearningGrowthEntity = {
   async deleteLGEntity(id) {
     try {
       const result = await excuteQuery({
-        query: "DELETE FROM learning_growth_entity WHERE id = ?",
+        query: "DELETE FROM learning_bsc WHERE id = ?",
         values: [id],
       });
 

@@ -5,7 +5,7 @@ export async function DELETE(req, { params }) {
   const id = params.strategy_id;
   try {
     // Extract id from the request body
-    const success = await StakeholderEntity.deleteStakeHolderEntity(id); // Pass id to deleteFinancialEntity
+    const success = await StakeholderEntity.deleteStakeholderEntity(id); // Pass id to deleteFinancialEntity
     if (success) {
       return NextResponse.json({ message: "Stakeholder entity deleted." }, { status: 200 });
     } else {

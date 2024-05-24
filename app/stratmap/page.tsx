@@ -710,21 +710,21 @@ const Page = () => {
       console.log("data: ", data);
 
       const strategies = {
-        financial: data.financial.map((item: any) => ({ id: 1, fID: item.id, value: item.input })),
+        financial: data.financial.map((item: any) => ({ id: 1, fID: item.id, value: item.office_target })),
         stakeholder: data.stakeholder.map((item: any) => ({
           id: 2,
           fID: item.id,
-          value: item.input,
+          value: item.office_target,
         })),
         internalProcess: data.internalProcess.map((item: any) => ({
           id: 3,
           fID: item.id,
-          value: item.input,
+          value: item.office_target,
         })),
         learningGrowth: data.learningGrowth.map((item: any) => ({
           id: 4,
           fID: item.id,
-          value: item.input,
+          value: item.office_target,
         })),
       };
 

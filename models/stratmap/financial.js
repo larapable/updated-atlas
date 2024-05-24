@@ -17,7 +17,7 @@ const FinancialEntity = {
   async getByDepartmentId(department_id) {
     try {
       return await excuteQuery({
-        query: "SELECT * FROM financial_entity WHERE department_id = ?",
+        query: "SELECT * FROM financial_bsc WHERE department_id = ?",
         values: [department_id],
       });
     } catch (error) {
@@ -29,7 +29,7 @@ const FinancialEntity = {
   async editFinancialEntity(id, input) {
     try {
       const result = await excuteQuery({
-        query: "UPDATE financial_entity SET input = ? WHERE id = ?",
+        query: "UPDATE financial_bsc SET office_target = ? WHERE id = ?",
         values: [input, id],
       });
 
@@ -47,7 +47,7 @@ const FinancialEntity = {
   async deleteFinancialEntity(id) {
     try {
       const result = await excuteQuery({
-        query: "DELETE FROM financial_entity WHERE id = ?",
+        query: "DELETE FROM financial_bsc WHERE id = ?",
         values: [id],
       });
 

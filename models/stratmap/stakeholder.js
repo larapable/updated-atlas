@@ -17,7 +17,7 @@ const StakeholderEntity = {
   async getByDepartmentId(department_id) {
     try {
       return await excuteQuery({
-        query: "SELECT * FROM stakeholder_entity WHERE department_id = ?",
+        query: "SELECT * FROM stakeholder_bsc WHERE department_id = ?",
         values: [department_id],
       });
     } catch (error) {
@@ -29,7 +29,7 @@ const StakeholderEntity = {
   async editStakeholderEntity(id, input) {
     try {
       const result = await excuteQuery({
-        query: "UPDATE stakeholder_entity SET input = ? WHERE id = ?",
+        query: "UPDATE stakeholder_bsc SET office_target = ? WHERE id = ?",
         values: [input, id],
       });
 
@@ -47,7 +47,7 @@ const StakeholderEntity = {
   async deleteStakeholderEntity(id) {
     try {
       const result = await excuteQuery({
-        query: "DELETE FROM stakeholder_entity WHERE id = ?",
+        query: "DELETE FROM stakeholder_bsc WHERE id = ?",
         values: [id],
       });
 

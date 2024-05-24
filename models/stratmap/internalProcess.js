@@ -17,7 +17,7 @@ const InternalProcess = {
   async getByDepartmentId(department_id) {
     try {
       return await excuteQuery({
-        query: "SELECT * FROM internal_process_entity WHERE department_id = ?",
+        query: "SELECT * FROM internal_bsc WHERE department_id = ?",
         values: [department_id],
       });
     } catch (error) {
@@ -29,7 +29,7 @@ const InternalProcess = {
   async editIPEntity(id, input) {
     try {
       const result = await excuteQuery({
-        query: "UPDATE internal_process_entity SET input = ? WHERE id = ?",
+        query: "UPDATE internal_bsc SET office_target = ? WHERE id = ?",
         values: [input, id],
       });
 
@@ -47,7 +47,7 @@ const InternalProcess = {
   async deleteIPEntity(id) {
     try {
       const result = await excuteQuery({
-        query: "DELETE FROM internal_process_entity WHERE id = ?",
+        query: "DELETE FROM internal_bsc WHERE id = ?",
         values: [id],
       });
 

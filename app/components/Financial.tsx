@@ -280,7 +280,7 @@ export default function Financial() {
     };
 
     fetchFinancialScorecards();
-  }, [department_id]);
+  }, [department_id, session]);
 
   const handleStartDateChange = (date: Date | null) => {
     console.log("Selected Start Date", date);
@@ -415,11 +415,8 @@ export default function Financial() {
                         {item.target_code || "N/A"}:
                       </span>
                       <span className="font-regular">
-                        {financialOfficeTarget.length > 60
-                          ? `${(item.office_target || "N/A").substring(
-                              0,
-                              60
-                            )}...`
+                        {item.office_target.length > 60
+                          ? `${item.office_target.substring(0, 60)}...`
                           : item.office_target || "N/A"}{" "}
                       </span>
                     </div>
